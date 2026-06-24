@@ -1,0 +1,18 @@
+﻿CREATE VIEW V_ITPS_EA_STOCK_SPLIT_VTA AS
+SELECT
+	CASE
+        WHEN T1."UgpEntry" = -1
+          OR T2."AltQty" IS NULL
+          OR T2."AltQty" = 0
+            THEN T1."OnHand"                              -- sin grupo de UoM: ya está en base
+        ELSE T1."OnHand" * (T2."BaseQty" / T2."AltQty")   -- conversión a unidades base
+    END                                             AS "AvailableStock_Unidades_Base",
+	T0."ItemCode",
+	T0."WhsCode",
+	T0."ItemCode" AS "kEY_ItemCode" ,
+	T0."WhsCode" AS "kEY_WhsCode"
+FROM
+	OITW T0
+INNER JOIN OITM T1 ON T1."ItemCode" = T0."ItemCode"
+LEFT  JOIN UGP1 T2 ON T2."UgpEntry" = T1."UgpEntry" AND T2."UomEntry" = T1."IUoMEntry"
+LEFT  JOIN OUOM T3 ON T3."UomEntry" = T1."IUoMEntry";
