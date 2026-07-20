@@ -146,6 +146,11 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_SplitPercentage).Value = (double)data.SplitPercentage;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ImportedPercentage).Value = (double)data.ImportedPercentage;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_CategoryClient).Value = data.CategoryClient;
+                string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",",".");
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
+
+                if(data.GlobalAgreement > 0) 
+                    primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
 
                 var docDateText = data.DocDate;
                 var docDueDateText = data.DocDueDate;
@@ -160,6 +165,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                 primaryOrder.Comments = data.Comments;
                 primaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
+                primaryOrder.PaymentGroupCode = data.PaymentGroupCode;
 
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity;
 
@@ -167,9 +173,15 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     .Where(l => !string.IsNullOrWhiteSpace(l.ItemCode))
                     .ToList();
 
+                if (validLines.Count == 0)
+                    throw new Exception("No hay líneas válidas para crear la Orden Principal.");
+
+                var invalidQtyPrincipal = validLines.FirstOrDefault(l => l.Quantity <= 0m);
+                if (invalidQtyPrincipal != null)
+                    throw new Exception($"Cantidad inválida en Orden Principal para el artículo {invalidQtyPrincipal.ItemCode}.");
+
                 for (int i = 0; i < validLines.Count; i++)
                 {
-
                     var line = validLines[i];
 
                     decimal baseQty = line.Quantity;
@@ -184,29 +196,42 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                     primaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
 
-                    if (!string.IsNullOrWhiteSpace(line.UomEntry))
-                        primaryOrder.Lines.UoMEntry = Convert.ToInt32(line.UomEntry);
+                    if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
+                        primaryOrder.Lines.UoMEntry = uomEntry;
 
-                    primaryOrder.Lines.TaxCode = line.TaxCode;
+                    if (!string.IsNullOrWhiteSpace(line.TaxCode))
+                        primaryOrder.Lines.TaxCode = line.TaxCode;
 
-                    if (data.IsImportOrder)
+                    if (data.IsImportOrder && (double)data.ImportLineDiscount != 100)
+                    {
                         primaryOrder.Lines.DiscountPercent = (double)data.ImportLineDiscount;
+                    }
+                    else
+                    {
+                        primaryOrder.Lines.DiscountPercent = (double)line.Discount;
+                    }
 
-                    if (!string.IsNullOrEmpty(line.AgrNo))
-                        primaryOrder.Lines.AgreementNo = Convert.ToInt32(line.AgrNo);
+                    if (int.TryParse(line.AgrNo, out int agreementNo) && agreementNo > 0)
+                        primaryOrder.Lines.AgreementNo = agreementNo;
 
-                    if (i < validLines.Count)
+                    if (i < validLines.Count - 1)
                         primaryOrder.Lines.Add();
                 }
 
                 if (primaryOrder.Add() != 0)
                 {
                     ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
-                    throw new Exception($"Error al crear la Orden Principal. {errCode} - {errMsg}");
+                    var detail = string.Join(" | ", validLines.Select((l, idx) =>
+                        $"L{idx + 1}:Item={l.ItemCode},Qty={l.Quantity},UomEntry={l.UomEntry},Whs={l.WhsCode},Tax={l.TaxCode},Price={l.UnitPrice},Agr={l.AgrNo}"));
+                    throw new Exception($"Error al crear la Orden Principal. {errCode} - {errMsg}.");
                 }
 
                 string newKey = ConnectionSDK.DIAPI.GetNewObjectKey();
                 docEntry = int.Parse(newKey);
+            }
+            catch(Exception ex)
+            {
+                NotificationService.Error(ex.Message);
             }
             finally
             {
@@ -231,6 +256,9 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_SplitPercentage).Value = splitPercentage;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ImportedPercentage).Value = (double)data.ImportedPercentage;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_CategoryClient).Value = data.CategoryClient;
+                string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",",".");
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
 
 
                 var docDateText = data.DocDate;
@@ -244,8 +272,11 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 if (!string.IsNullOrWhiteSpace(taxDateText))
                     secondaryOrder.TaxDate = ConverterService.GetDateTimeFromStringSAP(taxDateText);
 
+                secondaryOrder.Indicator = "NL"; // indicado no libro
+
                 secondaryOrder.Comments = data.Comments;
                 secondaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
+                secondaryOrder.PaymentGroupCode = data.PaymentGroupCode;
 
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity == Constants.FixedValues.EntityA ? Constants.FixedValues.EntityB : data.AssignedEntity;
 
@@ -257,10 +288,19 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 }
 
                 string taxCode = AppConfig.Get(Constants.ConfigProps.TaxCodeSecondaryOrder);
-                foreach (var line in data.Lines)
+                var validSecondaryLines = data.Lines
+                    .Where(l => !string.IsNullOrWhiteSpace(l.ItemCode))
+                    .ToList();
+
+                if (validSecondaryLines.Count == 0)
+                    throw new Exception("No hay líneas válidas para crear la Orden Secundaria.");
+
+                for (int i = 0; i < validSecondaryLines.Count; i++)
                 {
-                    if (string.IsNullOrWhiteSpace(line.ItemCode))
-                        continue;
+                    var line = validSecondaryLines[i];
+
+                    if (line.Quantity <= 0m)
+                        throw new Exception($"Cantidad inválida en Orden Secundaria para el artículo {line.ItemCode}.");
 
                     decimal baseQty = line.Quantity;
                     var (_, qtySecondary) = CalculateQuantities(baseQty, data.SplitPercentage);
@@ -273,15 +313,17 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                         secondaryOrder.Lines.WarehouseCode = whsCode;
 
                     secondaryOrder.Lines.Price = (double)line.UnitPrice;
-                    secondaryOrder.Lines.UoMEntry = Convert.ToInt32(line.UomEntry);
+
+                    if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
+                        secondaryOrder.Lines.UoMEntry = uomEntry;
 
                     secondaryOrder.Lines.TaxCode = taxCode;
 
-                    if (!string.IsNullOrEmpty(line.AgrNo))
-                        secondaryOrder.Lines.AgreementNo = Convert.ToInt32(line.AgrNo);
+                    if (int.TryParse(line.AgrNo, out int agreementNo) && agreementNo > 0)
+                        secondaryOrder.Lines.AgreementNo = agreementNo;
 
-                    secondaryOrder.Lines.Add();
-
+                    if (i < validSecondaryLines.Count - 1)
+                        secondaryOrder.Lines.Add();
                 }
 
                 if (secondaryOrder.Add() != 0)
@@ -311,15 +353,19 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             {
                 primaryOrder = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oOrders);
 
-                primaryOrder.GetByKey(data.DocEntry);
+                if (!primaryOrder.GetByKey(data.DocEntry)) return;
 
                 var docDateText = data.DocDate;
                 var docDueDateText = data.DocDueDate;
                 var taxDateText = data.TaxDate;
 
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_SplitPercentage).Value = (double)data.SplitPercentage;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ImportedPercentage).Value = (double)data.ImportedPercentage;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_CategoryClient).Value = data.CategoryClient;
-
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity;
+                string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",", ".");
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
 
                 if (!string.IsNullOrWhiteSpace(docDateText))
                     primaryOrder.DocDate = ConverterService.GetDateTimeFromStringSAP(docDateText);
@@ -330,95 +376,106 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                 primaryOrder.Comments = data.Comments;
                 primaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
+                primaryOrder.PaymentGroupCode = data.PaymentGroupCode;
 
-                // ELIMINACION DE LINEAS - FUNCIONA BIEN
-                var currLines = data.Lines.Select(l => l.LineId);
-                for (int i = 0; i < primaryOrder.Lines.Count; i++)
+                var validLines = data.Lines
+                    .Where(l => !string.IsNullOrWhiteSpace(l.ItemCode))
+                    .ToList();
+
+                var linesByLineNum = validLines
+                    .GroupBy(l => l.LineId)
+                    .ToDictionary(g => g.Key, g => g.First());
+
+                var lineNumsToClose = new HashSet<int>(validLines
+                    .Where(l => l.LineStatus == "C" && l.LineId >= 0)
+                    .Select(l => l.LineId));
+
+                // ELIMINAR LINEAS
+                for (int i = primaryOrder.Lines.Count - 1; i >= 0; i--)
                 {
                     primaryOrder.Lines.SetCurrentLine(i);
+                    int lineNum = primaryOrder.Lines.LineNum;
 
-                    if (!currLines.Contains(primaryOrder.Lines.LineNum))
-                    {
+                    if (!linesByLineNum.ContainsKey(lineNum))
                         primaryOrder.Lines.Delete();
-                    }
                 }
 
-                // ACTUALIZACION DE LINEAS - FUNCIONA BIEN
+                var existingLineNums = new HashSet<int>();
+
+                // ACTUALIZAR LINEAS
                 for (int i = 0; i < primaryOrder.Lines.Count; i++)
                 {
                     primaryOrder.Lines.SetCurrentLine(i);
+                    int lineNum = primaryOrder.Lines.LineNum;
+                    existingLineNums.Add(lineNum);
 
-                    if (currLines.Contains(primaryOrder.Lines.LineNum))
+                    if (!linesByLineNum.TryGetValue(lineNum, out var line))
+                        continue;
+
+                    if (line.LineStatus == "C")
+                        continue;
+
+                    primaryOrder.Lines.ItemCode = line.ItemCode;
+
+                    decimal currQty = line.Quantity;
+                    decimal currentQtyPrincipal = decimal.Round((decimal)primaryOrder.Lines.Quantity, 2, MidpointRounding.AwayFromZero);
+                    if (currentQtyPrincipal != decimal.Round(currQty, 2, MidpointRounding.AwayFromZero))
                     {
-                        var line = data.Lines[i];
-                        if (string.IsNullOrWhiteSpace(line.ItemCode))
-                            continue;
-
-                        primaryOrder.Lines.ItemCode = line.ItemCode;
-
-                        double prevQty = primaryOrder.Lines.Quantity;
-                        decimal currQty = line.Quantity;
-                        if (prevQty != (double)currQty)
-                        {
-                            var (qtyPrincipal, _) = CalculateQuantities(currQty, data.SplitPercentage);
-                            primaryOrder.Lines.Quantity = (double)qtyPrincipal;
-                        }
-
-                        var whsCode = line.WhsCode;
-                        if (!string.IsNullOrWhiteSpace(whsCode))
-                            primaryOrder.Lines.WarehouseCode = whsCode;
-
-                        primaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
-
-                        primaryOrder.Lines.TaxCode = line.TaxCode;
-
-                        if (line.LineStatus == "C" && primaryOrder.Lines.LineStatus != BoStatus.bost_Close)
-                            primaryOrder.Lines.LineStatus = BoStatus.bost_Close;
-                    }
-                }
-
-                // AGREGAR NUEVAS LINEAS - FUNCIONA BIEN
-                for (int i = 0; i < data.Lines.Count; i++)
-                {
-                    try
-                    {
-                        primaryOrder.Lines.SetCurrentLine(i);
-                    }
-                    catch
-                    {
-                        primaryOrder.Lines.Add();
-                        primaryOrder.Lines.SetCurrentLine(primaryOrder.Lines.Count - 1);
-
-                        var line = data.Lines[i];
-                        if (string.IsNullOrWhiteSpace(line.ItemCode))
-                            continue;
-
-                        primaryOrder.Lines.ItemCode = line.ItemCode;
-
-                        decimal currQty = line.Quantity;
                         var (qtyPrincipal, _) = CalculateQuantities(currQty, data.SplitPercentage);
                         primaryOrder.Lines.Quantity = (double)qtyPrincipal;
-
-
-                        var whsCode = line.WhsCode;
-                        if (!string.IsNullOrWhiteSpace(whsCode))
-                            primaryOrder.Lines.WarehouseCode = whsCode;
-
-                        primaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
-
-                        primaryOrder.Lines.TaxCode = line.TaxCode;
-
-                        //if (line.LineStatus == "C")
-                        //{
-                        //    primaryOrder.Lines.LineStatus = BoStatus.bost_Close;
-                        //    if (primaryOrder.Update() != 0)
-                        //    {
-                        //        ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
-                        //        throw new Exception($"Error al actualizar la linea de la Orden Principal. {errCode} - {errMsg}");
-                        //    }
-                        //}
-
                     }
+
+                    var whsCode = line.WhsCode;
+                    if (!string.IsNullOrWhiteSpace(whsCode))
+                        primaryOrder.Lines.WarehouseCode = whsCode;
+
+                    primaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
+                    primaryOrder.Lines.TaxCode = line.TaxCode;
+
+                    if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
+                        primaryOrder.Lines.UoMEntry = uomEntry;
+
+                    if (int.TryParse(line.AgrNo, out int agreementNo) && agreementNo > 0)
+                        primaryOrder.Lines.AgreementNo = agreementNo;
+
+                    if (data.IsImportOrder && (double)data.ImportLineDiscount != 100)
+                        primaryOrder.Lines.DiscountPercent = (double)data.ImportLineDiscount;
+                    else
+                        primaryOrder.Lines.DiscountPercent = (double)line.Discount;
+                }
+
+
+                // AGREGAR LINEAS
+                foreach (var line in validLines)
+                {
+                    if (existingLineNums.Contains(line.LineId))
+                        continue;
+
+                    primaryOrder.Lines.Add();
+                    primaryOrder.Lines.SetCurrentLine(primaryOrder.Lines.Count - 1);
+
+                    primaryOrder.Lines.ItemCode = line.ItemCode;
+
+                    var (qtyPrincipal, _) = CalculateQuantities(line.Quantity, data.SplitPercentage);
+                    primaryOrder.Lines.Quantity = (double)qtyPrincipal;
+
+                    var whsCode = line.WhsCode;
+                    if (!string.IsNullOrWhiteSpace(whsCode))
+                        primaryOrder.Lines.WarehouseCode = whsCode;
+
+                    primaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
+                    primaryOrder.Lines.TaxCode = line.TaxCode;
+
+                    if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
+                        primaryOrder.Lines.UoMEntry = uomEntry;
+
+                    if (int.TryParse(line.AgrNo, out int agreementNo) && agreementNo > 0)
+                        primaryOrder.Lines.AgreementNo = agreementNo;
+
+                    if (data.IsImportOrder && (double)data.ImportLineDiscount != 100)
+                        primaryOrder.Lines.DiscountPercent = (double)data.ImportLineDiscount;
+                    else
+                        primaryOrder.Lines.DiscountPercent = (double)line.Discount;
                 }
 
                 if (primaryOrder.Update() != 0)
@@ -426,6 +483,36 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
                     throw new Exception($"Error al actualizar la Orden Principal. {errCode} - {errMsg}");
                 }
+
+                if (lineNumsToClose.Count > 0)
+                {
+                    if (!primaryOrder.GetByKey(data.DocEntry)) return;
+
+                    bool needsCloseUpdate = false;
+
+                    for (int i = 0; i < primaryOrder.Lines.Count; i++)
+                    {
+                        primaryOrder.Lines.SetCurrentLine(i);
+
+                        if (!lineNumsToClose.Contains(primaryOrder.Lines.LineNum))
+                            continue;
+
+                        if (primaryOrder.Lines.LineStatus != BoStatus.bost_Close)
+                        {
+                            primaryOrder.Lines.LineStatus = BoStatus.bost_Close;
+                            needsCloseUpdate = true;
+                        }
+                    }
+
+                    if (needsCloseUpdate && primaryOrder.Update() != 0)
+                    {
+                        ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
+                        throw new Exception($"Error al actualizar el cierre de líneas de la Orden Principal. {errCode} - {errMsg}");
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(data.RelatedOrder))
+                    SyncLineStatusToRelatedOrder(data.DocEntry, Convert.ToInt32(data.RelatedOrder));
             }
             finally
             {
@@ -437,30 +524,26 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
         private void UpdateSecondaryOrder(SalesOrderFormModel data)
         {
             Documents secondaryOrder = null;
-            Documents primaryOrder = null;
 
             if (data.DocEntry == 0) return;
 
             try
             {
                 secondaryOrder = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oOrders);
-                primaryOrder = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oOrders);
-
 
                 if (!secondaryOrder.GetByKey(data.DocEntry)) return;
-                    //throw new Exception("No se encontró la orden secundaria a actualizar.");
 
-                if (!string.IsNullOrEmpty(data.RelatedOrder))
-                    primaryOrder.GetByKey(Convert.ToInt32(data.RelatedOrder));
-
-
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_SplitPercentage).Value = (double)(100m - data.SplitPercentage);
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ImportedPercentage).Value = (double)data.ImportedPercentage;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_CategoryClient).Value = data.CategoryClient;
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity == Constants.FixedValues.EntityA ? Constants.FixedValues.EntityB : data.AssignedEntity;
+                string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",", ".");
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
 
                 var docDateText = data.DocDate;
                 var docDueDateText = data.DocDueDate;
                 var taxDateText = data.TaxDate;
-
 
                 if (!string.IsNullOrWhiteSpace(docDateText))
                     secondaryOrder.DocDate = ConverterService.GetDateTimeFromStringSAP(docDateText);
@@ -471,108 +554,92 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                 secondaryOrder.Comments = data.Comments;
                 secondaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
+                secondaryOrder.PaymentGroupCode = data.PaymentGroupCode;
 
                 string taxCodeSecondary = AppConfig.Get(Constants.ConfigProps.TaxCodeSecondaryOrder);
+                var validLines = data.Lines
+                    .Where(l => !string.IsNullOrWhiteSpace(l.ItemCode))
+                    .ToList();
 
-                // ELIMINACION DE LINEAS - FUNCIONA BIEN
-                var currLines = data.Lines.Select(l => l.LineId);
-                for (int i = 0; i < secondaryOrder.Lines.Count; i++)
+                var linesByLineNum = validLines
+                    .GroupBy(l => l.LineId)
+                    .ToDictionary(g => g.Key, g => g.First());
+
+                var lineNumsToClose = new HashSet<int>(validLines
+                    .Where(l => l.LineStatus == "C" && l.LineId >= 0)
+                    .Select(l => l.LineId));
+
+                for (int i = secondaryOrder.Lines.Count - 1; i >= 0; i--)
                 {
                     secondaryOrder.Lines.SetCurrentLine(i);
+                    int lineNumB = secondaryOrder.Lines.LineNum;
 
-                    if (!currLines.Contains(secondaryOrder.Lines.LineNum))
-                    {
+                    if (!linesByLineNum.ContainsKey(lineNumB))
                         secondaryOrder.Lines.Delete();
-                    }
                 }
 
-                // ACTUALIZACION DE LINEAS - FUNCIONA BIEN
+                var existingLineNumsB = new HashSet<int>();
+
                 for (int i = 0; i < secondaryOrder.Lines.Count; i++)
                 {
                     secondaryOrder.Lines.SetCurrentLine(i);
+                    int lineNumB = secondaryOrder.Lines.LineNum;
+                    existingLineNumsB.Add(lineNumB);
 
-                    if (currLines.Contains(secondaryOrder.Lines.LineNum))
+                    if (!linesByLineNum.TryGetValue(lineNumB, out var line))
+                        continue;
+
+                    if (line.LineStatus == "C")
+                        continue;
+
+                    secondaryOrder.Lines.ItemCode = line.ItemCode;
+
+                    decimal currentQtySecondary = decimal.Round((decimal)secondaryOrder.Lines.Quantity, 2, MidpointRounding.AwayFromZero);
+                    if (currentQtySecondary != decimal.Round((decimal)line.Quantity, 2, MidpointRounding.AwayFromZero))
                     {
-                        var line = data.Lines[i];
-                        if (string.IsNullOrWhiteSpace(line.ItemCode))
-                            continue;
-
-                        secondaryOrder.Lines.ItemCode = line.ItemCode;
-
-                        double prevQty;
-                        if (!string.IsNullOrEmpty(data.RelatedOrder))
-                        {
-
-                            primaryOrder.Lines.SetCurrentLine(i);
-                            prevQty = primaryOrder.Lines.Quantity;
-                        }
-                        else
-                        {
-                            prevQty = secondaryOrder.Lines.Quantity;
-                        }
-
-                        decimal currQty = line.Quantity;
-                        if (prevQty != (double)currQty)
-                        {
-                            var (_, qtySecondary) = CalculateQuantities(currQty, data.SplitPercentage);
-                            secondaryOrder.Lines.Quantity = (double)qtySecondary;
-                        }
-
-                        var whsCode = line.WhsCode;
-                        if (!string.IsNullOrWhiteSpace(whsCode))
-                            secondaryOrder.Lines.WarehouseCode = whsCode;
-
-                        secondaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
-
-                        secondaryOrder.Lines.TaxCode = taxCodeSecondary;
-
-                        //if (line.LineStatus == "C" && secondaryOrder.Lines.LineStatus != BoStatus.bost_Close)
-                        //{
-                        //    secondaryOrder.Lines.LineStatus = BoStatus.bost_Close;
-                        //    if (secondaryOrder.Update() != 0)
-                        //    {
-                        //        ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
-                        //        throw new Exception($"Error al actualizar la linea de la Orden Secundaria. {errCode} - {errMsg}");
-                        //    }
-                        //}
-
+                        var (_, qtySecondary) = CalculateQuantities(line.Quantity, data.SplitPercentage);
+                        secondaryOrder.Lines.Quantity = (double)qtySecondary;
                     }
+
+                    var whsCode = line.WhsCode;
+                    if (!string.IsNullOrWhiteSpace(whsCode))
+                        secondaryOrder.Lines.WarehouseCode = whsCode;
+
+                    secondaryOrder.Lines.Price = (double)line.UnitPrice;
+                    secondaryOrder.Lines.TaxCode = taxCodeSecondary;
+
+                    if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
+                        secondaryOrder.Lines.UoMEntry = uomEntry;
+
+                    if (int.TryParse(line.AgrNo, out int agreementNo) && agreementNo > 0)
+                        secondaryOrder.Lines.AgreementNo = agreementNo;
                 }
 
-                // AGREGAR NUEVAS LINEAS - FUNCIONA BIEN
-                for (int i = 0; i < data.Lines.Count; i++)
+                foreach (var line in validLines)
                 {
-                    try
-                    {
-                        secondaryOrder.Lines.SetCurrentLine(i);
-                    }
-                    catch
-                    {
-                        secondaryOrder.Lines.Add();
-                        secondaryOrder.Lines.SetCurrentLine(secondaryOrder.Lines.Count - 1);
+                    if (existingLineNumsB.Contains(line.LineId))
+                        continue;
 
-                        var line = data.Lines[i];
-                        if (string.IsNullOrWhiteSpace(line.ItemCode))
-                            continue;
+                    secondaryOrder.Lines.Add();
+                    secondaryOrder.Lines.SetCurrentLine(secondaryOrder.Lines.Count - 1);
 
-                        secondaryOrder.Lines.ItemCode = line.ItemCode;
+                    secondaryOrder.Lines.ItemCode = line.ItemCode;
 
-                        decimal currQty = line.Quantity;
-                        var (_, qtySecondary) = CalculateQuantities(currQty, data.SplitPercentage);
-                        secondaryOrder.Lines.Quantity = (double)qtySecondary;
+                    var (_, qtySecondary) = CalculateQuantities(line.Quantity, data.SplitPercentage);
+                    secondaryOrder.Lines.Quantity = (double)qtySecondary;
 
-                        var whsCode = line.WhsCode;
-                        if (!string.IsNullOrWhiteSpace(whsCode))
-                            secondaryOrder.Lines.WarehouseCode = whsCode;
+                    var whsCode = line.WhsCode;
+                    if (!string.IsNullOrWhiteSpace(whsCode))
+                        secondaryOrder.Lines.WarehouseCode = whsCode;
 
-                        secondaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
+                    secondaryOrder.Lines.Price = (double)line.UnitPrice;
+                    secondaryOrder.Lines.TaxCode = taxCodeSecondary;
 
-                        secondaryOrder.Lines.TaxCode = taxCodeSecondary;
+                    if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
+                        secondaryOrder.Lines.UoMEntry = uomEntry;
 
-                        if (line.LineStatus == "C")
-                            secondaryOrder.Lines.LineStatus = BoStatus.bost_Close;
-
-                    }
+                    if (int.TryParse(line.AgrNo, out int agreementNo) && agreementNo > 0)
+                        secondaryOrder.Lines.AgreementNo = agreementNo;
                 }
 
                 if (secondaryOrder.Update() != 0)
@@ -580,11 +647,40 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
                     throw new Exception($"Error al actualizar la Orden Secundaria. {errCode} - {errMsg}");
                 }
+
+                if (lineNumsToClose.Count > 0)
+                {
+                    if (!secondaryOrder.GetByKey(data.DocEntry)) return;
+
+                    bool needsCloseUpdate = false;
+
+                    for (int i = 0; i < secondaryOrder.Lines.Count; i++)
+                    {
+                        secondaryOrder.Lines.SetCurrentLine(i);
+
+                        if (!lineNumsToClose.Contains(secondaryOrder.Lines.LineNum))
+                            continue;
+
+                        if (secondaryOrder.Lines.LineStatus != BoStatus.bost_Close)
+                        {
+                            secondaryOrder.Lines.LineStatus = BoStatus.bost_Close;
+                            needsCloseUpdate = true;
+                        }
+                    }
+
+                    if (needsCloseUpdate && secondaryOrder.Update() != 0)
+                    {
+                        ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
+                        throw new Exception($"Error al actualizar el cierre de líneas de la Orden Secundaria. {errCode} - {errMsg}");
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(data.RelatedOrder))
+                    SyncLineStatusToRelatedOrder(Convert.ToInt32(data.RelatedOrder), data.DocEntry);
             }
             finally
             {
                 if (secondaryOrder != null) Marshal.ReleaseComObject(secondaryOrder);
-                if (primaryOrder != null) Marshal.ReleaseComObject(primaryOrder);
             }
         }
 
@@ -610,6 +706,74 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             {
                 if (primaryOrder != null)
                     Marshal.ReleaseComObject(primaryOrder);
+            }
+        }
+
+        /// <summary>
+        /// Sincroniza el estado de cierre (LineStatus) de líneas entre dos órdenes relacionadas.
+        /// Cuando una línea se cierra en la orden origen, se cierra también en la orden destino.
+        /// </summary>
+        /// <param name="sourceOrderEntry">DocEntry de la orden origen (la que fue actualizada)</param>
+        /// <param name="targetOrderEntry">DocEntry de la orden destino (la que debe sincronizarse)</param>
+        private void SyncLineStatusToRelatedOrder(int sourceOrderEntry, int targetOrderEntry)
+        {
+            Documents sourceOrder = null;
+            Documents targetOrder = null;
+            try
+            {
+                sourceOrder = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oOrders);
+                targetOrder = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oOrders);
+
+                if (!sourceOrder.GetByKey(sourceOrderEntry))
+                    throw new Exception($"No se encontró la orden origen ({sourceOrderEntry}) para sincronizar líneas.");
+
+                if (!targetOrder.GetByKey(targetOrderEntry))
+                    throw new Exception($"No se encontró la orden destino ({targetOrderEntry}) para sincronizar líneas.");
+
+                bool needsUpdate = false;
+
+                // Recorrer líneas de la orden origen y aplicar cierre a la orden destino
+                for (int i = 0; i < sourceOrder.Lines.Count; i++)
+                {
+                    sourceOrder.Lines.SetCurrentLine(i);
+
+                    // Si la línea está cerrada en la orden origen
+                    if (sourceOrder.Lines.LineStatus == BoStatus.bost_Close)
+                    {
+                        // Buscar la línea correspondiente en la orden destino por LineNum
+                        for (int j = 0; j < targetOrder.Lines.Count; j++)
+                        {
+                            targetOrder.Lines.SetCurrentLine(j);
+                            if (targetOrder.Lines.LineNum == sourceOrder.Lines.LineNum)
+                            {
+                                // Si no está cerrada, cerrarla
+                                if (targetOrder.Lines.LineStatus != BoStatus.bost_Close)
+                                {
+                                    targetOrder.Lines.LineStatus = BoStatus.bost_Close;
+                                    needsUpdate = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Si hubo cambios, actualizar la orden destino
+                if (needsUpdate)
+                {
+                    if (targetOrder.Update() != 0)
+                    {
+                        ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
+                        throw new Exception($"Error al sincronizar el cierre de líneas en la orden relacionada ({targetOrderEntry}). {errCode} - {errMsg}");
+                    }
+                }
+            }
+            finally
+            {
+                if (sourceOrder != null)
+                    Marshal.ReleaseComObject(sourceOrder);
+                if (targetOrder != null)
+                    Marshal.ReleaseComObject(targetOrder);
             }
         }
 

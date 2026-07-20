@@ -141,7 +141,8 @@ namespace Addon_AutoDivSalesOrd.Configuration
         {
             try
             {
-                InfraDataService.CreateUserField(
+                // Sales Order UDFs
+                InfraDataService.CreateUserField( 
                     tableName: "ORDR",
                     fieldName: "ITPS_SplitPercentage",
                     desc: "Porcentaje Split Aplicado",
@@ -161,12 +162,12 @@ namespace Addon_AutoDivSalesOrd.Configuration
                      fieldName: "ITPS_ImportedPercentage",
                      desc: "Porcentaje de Importados",
                      type: BoFieldTypes.db_Float,
-                        subType: BoFldSubTypes.st_Percentage,
-                        validValues: new List<InfraDataService.ValidValueOption>
-                        {
-                            new InfraDataService.ValidValueOption { Value = "100", Description = "1 - 100%" },
-                            new InfraDataService.ValidValueOption { Value = "50", Description = "2 - 50%" }
-                        });
+                    subType: BoFldSubTypes.st_Percentage,
+                    validValues: new List<InfraDataService.ValidValueOption>
+                    {
+                        new InfraDataService.ValidValueOption { Value = "100", Description = "1 - 100%" },
+                        new InfraDataService.ValidValueOption { Value = "50", Description = "2 - 50%" }
+                    });
 
                 InfraDataService.CreateUserField(
                     tableName: "ORDR",
@@ -175,8 +176,42 @@ namespace Addon_AutoDivSalesOrd.Configuration
                     type: BoFieldTypes.db_Numeric,
                     linkedSystemObject: UDFLinkedSystemObjectTypesEnum.ulOrders);
 
-                
+                InfraDataService.CreateUserField(
+                    tableName: "ORDR",
+                    fieldName: "CATEGORIA_CLIENTE",
+                    desc: "Categoria Cliente",
+                    type: BoFieldTypes.db_Alpha,
+                    size: 10,
+                    validValues: new List<InfraDataService.ValidValueOption>
+                        {
+                            new InfraDataService.ValidValueOption { Value = "AA", Description = "AA" },
+                            new InfraDataService.ValidValueOption { Value = "A", Description = "A" },
+                            new InfraDataService.ValidValueOption { Value = "B", Description = "B" },
+                            new InfraDataService.ValidValueOption { Value = "C", Description = "C" },
+                        });
 
+                InfraDataService.CreateUserField(
+                   tableName: "ORDR",
+                   fieldName: "ITPS_DESCUENTO",
+                   desc: "Descuento",
+                   type: BoFieldTypes.db_Float,
+                   subType: BoFldSubTypes.st_Percentage
+                   );
+
+                InfraDataService.CreateUserField(
+                   tableName: "ORDR",
+                   fieldName: "Tipo",
+                   desc: "Tipo",
+                   type: BoFieldTypes.db_Alpha,
+                   size: 15,
+                   defaultValue: "A DEFINIR",
+                   validValues: new List<InfraDataService.ValidValueOption>
+                        {
+                            new InfraDataService.ValidValueOption { Value = "NORMAL", Description = "STS" },
+                            new InfraDataService.ValidValueOption { Value = "PRESUPUESTO", Description = "RIAG" },
+                            new InfraDataService.ValidValueOption { Value = "A DEFINIR", Description = "A DEFINIR" },
+                        }
+                   );
 
                 InfraDataService.CreateUserTable(name: "ITPS_ZONAENTREGA", desc: "Zonas de Entrega", type: BoUTBTableType.bott_NoObject);
 
@@ -187,6 +222,15 @@ namespace Addon_AutoDivSalesOrd.Configuration
                     type: BoFieldTypes.db_Alpha,
                     size: 50,
                     linkedTable: "ITPS_ZONAENTREGA");
+
+                InfraDataService.CreateUserField(
+                    tableName: "ORDR",
+                    fieldName: "ITPS_NRO_AC",
+                    desc: "Nro Acuerdo Comercial",
+                    type: BoFieldTypes.db_Numeric,
+                    size: 10);
+
+                // Sales Order UDFs End
 
                 // Direcciones de socios de negocios
                 InfraDataService.CreateUserField(
@@ -235,8 +279,8 @@ namespace Addon_AutoDivSalesOrd.Configuration
                                                                                                 WHEN T1.""UgpEntry"" = -1
                                                                                                     OR T2.""AltQty"" IS NULL
                                                                                                     OR T2.""AltQty"" = 0
-                                                                                                    THEN T1.""OnHand""                              -- sin grupo de UoM: ya está en base
-                                                                                                ELSE T1.""OnHand"" * (T2.""BaseQty"" / T2.""AltQty"")   -- conversión a unidades base
+                                                                                                    THEN T0.""OnHand""                              -- sin grupo de UoM: ya está en base
+                                                                                                ELSE T0.""OnHand"" * (T2.""BaseQty"" / T2.""AltQty"")   -- conversión a unidades base
                                                                                             END                                             AS ""AvailableStock_Unidades_Base"",
 	                                                                                        T0.""ItemCode"",
 	                                                                                        T0.""WhsCode"",

@@ -50,7 +50,9 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_ImportedPercentage = "U_ITPS_ImportedPercentage";
             public const string Head_CategoryClient = "U_CATEGORIA_CLIENTE";
             public const string Head_AssignedEntity = "U_Tipo";
+            public const string Head_GlobalAgree = "U_ITPS_NRO_AC";
             public const string Head_RelatedOrder = "U_ITPS_RelatedOrder";
+            public const string Head_ItpsDiscount = "U_ITPS_DESCUENTO";
             public const string Head_DocDate = "DocDate";
             public const string Head_DocEntry = "DocEntry";
             public const string Head_DocDueDate = "DocDueDate";
@@ -77,11 +79,13 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_CategoryClient = "U_CATEGORIA_CLIENTE";
             public const string Head_AssignedEntity = "U_Tipo";
             public const string Head_RelatedOrder = "U_ITPS_RelatedOrder";
+            public const string Head_ItpsDiscount = "U_ITPS_DESCUENTO";
             public const string Head_DocDate = "10";
             public const string Head_DocDueDate = "12";
             public const string Head_TaxDate = "46";
             public const string Head_Comments = "16";
             public const string Head_DiscPrcnt = "24";
+            public const string Head_PaymentGroupCode = "47";
             public const string Head_Money = "70";
 
             public const string Det_ItemCode = "1";

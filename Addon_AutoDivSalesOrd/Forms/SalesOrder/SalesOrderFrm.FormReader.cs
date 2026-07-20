@@ -31,6 +31,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             var oComments = (EditText)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Comments).Specific;
             var oCategoryClient = (ComboBox)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_CategoryClient).Specific;
             var oDiscPrcnt = (EditText)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_DiscPrcnt).Specific;
+            var oPaymentGroupCode = (ComboBox)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_PaymentGroupCode).Specific;
             var oMtx = (Matrix)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Matrix).Specific;
 
             mdl.CardCode = oCardCode.Value;
@@ -47,12 +48,16 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             string assignedEntityValue = db.GetValue(Constants.SalesOrder_Fields.Head_AssignedEntity, 0).Trim();
             mdl.AssignedEntity = string.IsNullOrEmpty(assignedEntityValue) ? string.Empty : assignedEntityValue;
 
+            string globalAgree = db.GetValue(Constants.SalesOrder_Fields.Head_GlobalAgree, 0).Trim();
+            mdl.GlobalAgreement = int.TryParse(globalAgree, out int agreement) ? agreement : 0;
+
             mdl.DocDate = oDocDate.Value;
             mdl.DocDueDate = oDocDueDate.Value;
             mdl.TaxDate = oTaxDate.Value;
             mdl.Comments = oComments.Value;
             mdl.TotalDiscountPercent = decimal.Parse(oDiscPrcnt.Value, CultureInfo.InvariantCulture);
             mdl.CategoryClient = oCategoryClient.Value;
+            mdl.PaymentGroupCode = Convert.ToInt32(oPaymentGroupCode.Value);
 
             string docEntry = db.GetValue(Constants.SalesOrder_Fields.Head_DocEntry, 0);
 

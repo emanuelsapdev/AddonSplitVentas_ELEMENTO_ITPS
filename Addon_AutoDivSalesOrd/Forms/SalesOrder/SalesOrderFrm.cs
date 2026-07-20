@@ -43,6 +43,9 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 {
                     oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
 
+                    // Eliminar líneas vacías de la matriz antes de procesar
+                    //RemoveEmptyLinesFromMatrix(oForm);
+
                     // ExportMatrixColumnsDetailToTxt(oForm, "C:\\columnsData.txt");  // solo para testear
 
                     var data = GetDataFromFormOrder(oForm);
@@ -237,7 +240,8 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             // AL CAMBIAR EL VALOR DEL SELECTOR PORCENTAJE DE IMPORTADOS
             else if (pVal.EventType == BoEventTypes.et_COMBO_SELECT && pVal.ActionSuccess
                      && pVal.ItemUID == Constants.SalesOrder_FieldsUIDs.Head_ImportedPercentage
-                     && pVal.FormMode == (int)SAPbouiCOM.BoFormMode.fm_ADD_MODE)
+                     // && pVal.FormMode == (int)SAPbouiCOM.BoFormMode.fm_ADD_MODE
+                     )
             {
                 SAPbouiCOM.Form oForm = null;
                 SAPbobsCOM.Recordset oRec = null;
@@ -249,6 +253,9 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                     SAPbouiCOM.ComboBox etImportedPerc = oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_ImportedPercentage).Specific;
                     string vImportedPerc = etImportedPerc.Value;
+                    decimal.TryParse(vImportedPerc, out decimal importedPerc);
+
+                    if (importedPerc == 100m) return;
 
                     Matrix oMtx = oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Matrix).Specific;
 
@@ -267,7 +274,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                             oRec.DoQuery(q);
                             if (oRec.RecordCount == 0) continue;
 
-                            decimal.TryParse(vImportedPerc,out decimal importedPerc);
+                            
                             decimal.TryParse(oDiscount.Value.Replace(".", ","), out decimal discountSap);
                             if (string.IsNullOrEmpty(itemCode) || discountSap == importedPerc) continue;
                             oDiscount.Value = vImportedPerc.Replace(",", ".");
@@ -347,12 +354,13 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 switch (pVal.MenuUID)
                 {
                     case Constants.MenusUID.Cancel:
-                        BubbleEvent = false;
 
                         oForm = ConnectionSDK.UIAPI.Forms.ActiveForm;
+                        if (oForm.TypeEx != SalesOrderFrm.FormType) return;
+                        BubbleEvent = false;
+
                         baseData = GetDataFromFormOrder(oForm);
                         
-
                         int entryPrimary = baseData.DocEntry;
                         int entrySecondary = GetRelatedOrder(entryPrimary);
 
@@ -415,9 +423,11 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                         break;
 
                     case Constants.MenusUID.Close:
-                        BubbleEvent = false;
 
                         oForm = ConnectionSDK.UIAPI.Forms.ActiveForm;
+                        if (oForm.TypeEx != SalesOrderFrm.FormType) return;
+                        BubbleEvent = false;
+
                         baseData = GetDataFromFormOrder(oForm);
                         
 
@@ -490,6 +500,8 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                         {
                             if (pVal.BeforeAction) break;
                             oForm = ConnectionSDK.UIAPI.Forms.ActiveForm;
+                            if (oForm.TypeEx != SalesOrderFrm.FormType) return;
+
                             SAPbouiCOM.ComboBox oCbTipo = oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_AssignedEntity).Specific;
                             oForm.Freeze(true);
                             oCbTipo.Select("NORMAL");
@@ -516,6 +528,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                         {
                             if (pVal.BeforeAction) break;
                             oForm = ConnectionSDK.UIAPI.Forms.ActiveForm;
+                            if (oForm.TypeEx != SalesOrderFrm.FormType) return;
                             SAPbouiCOM.ComboBox oCbTipo = oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_AssignedEntity).Specific;
                             SAPbouiCOM.ComboBox oCbSplitPerc = oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_SplitPercentage).Specific;
                             oForm.Freeze(true);

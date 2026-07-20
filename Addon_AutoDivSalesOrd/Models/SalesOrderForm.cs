@@ -23,6 +23,8 @@ namespace Addon_AutoDivSalesOrd.Models
         public bool IsImportOrder { get; set; } = false;
         public decimal ImportLineDiscount { get; set; } = 0m;
         public decimal TotalDiscountPercent { get; set; }
+        public int PaymentGroupCode { get; set; }
+        public int GlobalAgreement { get; set; }
 
         public List<SalesOrderLineModel> Lines { get; set; } = new List<SalesOrderLineModel>();
     }
