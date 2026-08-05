@@ -105,6 +105,12 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
                         foreach (var splitGroup in splitGroups)
                             foreach (var row in splitGroup)
                             {
+                                var availableForReleaseCell = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_AvailableForRelease, row.LineNum)).Value;
+                                decimal availableForRelease = !string.IsNullOrEmpty(availableForReleaseCell)
+                                    ? decimal.Parse(availableForReleaseCell, System.Globalization.CultureInfo.GetCultureInfo("es-AR"))
+                                    : 0m;
+
+                                row.ToRelease = Math.Max(0m, Math.Min(row.ToRelease, availableForRelease));
                                 oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_ToRelease, row.LineNum).Value = row.ToRelease.ToString();
                                 oProgress.Value += 1;
                             }

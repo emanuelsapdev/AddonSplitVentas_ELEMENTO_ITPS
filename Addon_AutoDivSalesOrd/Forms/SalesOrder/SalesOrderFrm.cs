@@ -255,7 +255,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     string vImportedPerc = etImportedPerc.Value;
                     decimal.TryParse(vImportedPerc, out decimal importedPerc);
 
-                    if (importedPerc == 100m) return;
+                    //if (importedPerc == 100m) return;
 
                     Matrix oMtx = oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Matrix).Specific;
 
@@ -277,7 +277,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                             
                             decimal.TryParse(oDiscount.Value.Replace(".", ","), out decimal discountSap);
                             if (string.IsNullOrEmpty(itemCode) || discountSap == importedPerc) continue;
-                            oDiscount.Value = vImportedPerc.Replace(",", ".");
+                            oDiscount.Value = importedPerc != 100m ? vImportedPerc.Replace(",", ".") : "0.00";
                         }
                         finally
                         {

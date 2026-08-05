@@ -9,7 +9,7 @@ namespace Addon_AutoDivSalesOrd.Common
     {
         protected static SAPbouiCOM.Application _UIAPI;
         protected static SAPbobsCOM.Company _DIAPI;
-        public static SAPbouiCOM.Application UIAPI => _UIAPI ?? throw new Exception(Constants.Messages.UiApiNotDefined);
+        public static SAPbouiCOM.Application UIAPI =>  _UIAPI ?? throw new Exception(Constants.Messages.UiApiNotDefined);
         public static SAPbobsCOM.Company DIAPI => _DIAPI ?? throw new Exception(Constants.Messages.DiApiNotDefined);
 
         public static bool Connected => _UIAPI != null && _DIAPI.Connected;

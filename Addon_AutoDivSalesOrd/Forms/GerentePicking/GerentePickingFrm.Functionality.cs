@@ -38,15 +38,15 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
             foreach (var itemEntry in groupedRows)
             {
                 var firstRow = itemEntry.Value.SelectMany(g => g).First();
-
+                if (firstRow.ItemCode != "TN10000258") continue; // quitar
                 // Ajustar el stock disponible a bultos completos
                 decimal availableStock = firstRow.AvailableStock;
                 decimal qtyDozenPerPack = GetQtyDozenPerPackage(firstRow.ItemCode);
                 // Convertir docenas a unidades: docenas * 12
-                decimal unitsPerPack = qtyDozenPerPack > 0 ? qtyDozenPerPack * 12m : 0m;
+                decimal unitsPerPack = qtyDozenPerPack > 0 ? qtyDozenPerPack * 12m : 12m;
 
                 decimal remainingStock = unitsPerPack > 0
-                    ? Math.Floor(availableStock / unitsPerPack) * unitsPerPack
+                    ? Math.Floor(availableStock / unitsPerPack) // * unitsPerPack
                     : availableStock;
 
                 foreach (var splitGroup in itemEntry.Value)
@@ -61,23 +61,21 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
                     bool isSplit = splitGroup.Any(r => r.SplitPercentage != 100m);
 
                     if (!isSplit)
-                    {
-                        // Línea individual o 100 %: asignar cantidad completa hasta el stock disponible
-                        foreach (var row in splitGroup)
                         {
-                            // Convertir QtyOpen a unidades base: QtyOpen * ItemsPerUnit
-                            decimal qtyOpenInBase = row.QtyOpen * row.ItemsPerUnit;
-                            decimal toReleaseInBase = Math.Floor(Math.Min(qtyOpenInBase, remainingStock));
+                            foreach (var row in splitGroup)
+                            {
+                                decimal qtyOpenInBase = row.QtyOpen * row.ItemsPerUnit;
+                                decimal toReleaseInBase = Math.Floor(Math.Min(qtyOpenInBase, remainingStock));
+                                decimal calculatedToRelease = row.ItemsPerUnit > 0
+                                    ? Math.Floor(toReleaseInBase / row.ItemsPerUnit)
+                                    : 0m;
 
-                            // Convertir el resultado nuevamente a unidades de la orden
-                            row.ToRelease = row.ItemsPerUnit > 0
-                                ? Math.Floor(toReleaseInBase / row.ItemsPerUnit)
-                                : 0m;
+                                row.ToRelease = Math.Min(calculatedToRelease, row.AvailableForRelease);
 
-                            remainingStock -= toReleaseInBase;
-                            if (remainingStock < 0m) remainingStock = 0m;
+                                remainingStock -= toReleaseInBase;
+                                if (remainingStock < 0m) remainingStock = 0m;
+                            }
                         }
-                    }
                     else
                     {
                         // Par de split con porcentajes distintos de 100 %
@@ -85,9 +83,8 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
 
                         if (totalNeededInBase <= remainingStock)
                         {
-                            // Stock suficiente: cada línea recibe su cantidad completa
                             foreach (var row in splitGroup)
-                                row.ToRelease = Math.Floor(row.QtyOpen);
+                                row.ToRelease = Math.Min(Math.Floor(row.QtyOpen), row.AvailableForRelease);
 
                             remainingStock -= totalNeededInBase;
                         }
@@ -97,9 +94,11 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
                             foreach (var row in splitGroup)
                             {
                                 decimal toReleaseInBase = Math.Floor(remainingStock * row.SplitPercentage / 100m);
-                                row.ToRelease = row.ItemsPerUnit > 0
+                                decimal calculatedToRelease = row.ItemsPerUnit > 0
                                     ? Math.Floor(toReleaseInBase / row.ItemsPerUnit)
                                     : 0m;
+
+                                row.ToRelease = Math.Min(calculatedToRelease, row.AvailableForRelease);
                             }
 
                             remainingStock = 0m;

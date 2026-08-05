@@ -1,6 +1,7 @@
 ﻿using Addon_AutoDivSalesOrd.Common;
 using Addon_AutoDivSalesOrd.Models;
 using Addon_AutoDivSalesOrd.Services;
+using SAPbobsCOM;
 using SAPbouiCOM;
 using System;
 using System.Collections.Generic;
@@ -32,6 +33,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             var oCategoryClient = (ComboBox)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_CategoryClient).Specific;
             var oDiscPrcnt = (EditText)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_DiscPrcnt).Specific;
             var oPaymentGroupCode = (ComboBox)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_PaymentGroupCode).Specific;
+            var oAddress2 = (EditText)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Address2).Specific;
+            var oShipToCode = (ComboBox)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_ShipToCode).Specific;
+            var oAddress = (EditText)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Address).Specific;
+            var oPayToCode = (ComboBox)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_PayToDate).Specific;
             var oMtx = (Matrix)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Matrix).Specific;
 
             mdl.CardCode = oCardCode.Value;
@@ -58,6 +63,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             mdl.TotalDiscountPercent = decimal.Parse(oDiscPrcnt.Value, CultureInfo.InvariantCulture);
             mdl.CategoryClient = oCategoryClient.Value;
             mdl.PaymentGroupCode = Convert.ToInt32(oPaymentGroupCode.Value);
+            mdl.Address2 = oAddress2.Value;
+            mdl.ShipToCode = oShipToCode.Value;
+            mdl.Address = oAddress.Value;
+            mdl.PayToCode = oPayToCode.Value;
 
             string docEntry = db.GetValue(Constants.SalesOrder_Fields.Head_DocEntry, 0);
 

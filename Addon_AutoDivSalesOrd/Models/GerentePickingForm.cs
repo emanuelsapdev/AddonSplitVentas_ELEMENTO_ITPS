@@ -31,6 +31,7 @@ namespace Addon_AutoDivSalesOrd.Models
         public bool QuantityExceedsAvailable { get; set; }
         public decimal ToRelease { get; set; }
         public decimal ItemsPerUnit { get; set; }
+        public decimal AvailableForRelease { get; set; }
 
     }
 

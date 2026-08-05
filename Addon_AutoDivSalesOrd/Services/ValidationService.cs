@@ -50,6 +50,12 @@ namespace Addon_AutoDivSalesOrd.Services
             }
         }
 
+        //public static void ValidateEntityTypeAtUpdate(SalesOrderFormModel data, string prevEntity)
+        //{
+        //    if (data.AssignedEntity != prevEntity) throw new Exception(Constants.Messages.ValidationEntityToUpdate);
+        //}
+
+
         public static void ValidatePorcentageAtUpdate(SalesOrderFormModel data)
         {
             Recordset rs = null;
@@ -125,6 +131,7 @@ namespace Addon_AutoDivSalesOrd.Services
             }
 
         }
+
 
         
 

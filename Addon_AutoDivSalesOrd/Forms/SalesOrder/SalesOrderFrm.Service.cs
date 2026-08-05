@@ -166,6 +166,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.Comments = data.Comments;
                 primaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
                 primaryOrder.PaymentGroupCode = data.PaymentGroupCode;
+                primaryOrder.Address2 = data.Address2;
+                primaryOrder.ShipToCode = data.ShipToCode;
+                primaryOrder.Address = data.Address;
+                primaryOrder.PayToCode = data.PayToCode;
 
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity;
 
@@ -277,6 +281,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.Comments = data.Comments;
                 secondaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
                 secondaryOrder.PaymentGroupCode = data.PaymentGroupCode;
+                secondaryOrder.Address2 = data.Address2;
+                secondaryOrder.ShipToCode = data.ShipToCode;
+                secondaryOrder.Address = data.Address;
+                secondaryOrder.PayToCode = data.PayToCode;
 
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity == Constants.FixedValues.EntityA ? Constants.FixedValues.EntityB : data.AssignedEntity;
 
@@ -312,7 +320,9 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     if (!string.IsNullOrWhiteSpace(whsCode))
                         secondaryOrder.Lines.WarehouseCode = whsCode;
 
-                    secondaryOrder.Lines.Price = (double)line.UnitPrice;
+                   // secondaryOrder.Lines.Price = (double)line.UnitPrice;
+
+                    secondaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
 
                     if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
                         secondaryOrder.Lines.UoMEntry = uomEntry;
@@ -377,6 +387,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.Comments = data.Comments;
                 primaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
                 primaryOrder.PaymentGroupCode = data.PaymentGroupCode;
+                primaryOrder.Address2 = data.Address2;
+                primaryOrder.ShipToCode = data.ShipToCode;
+                primaryOrder.Address = data.Address;
+                primaryOrder.PayToCode = data.PayToCode;
 
                 var validLines = data.Lines
                     .Where(l => !string.IsNullOrWhiteSpace(l.ItemCode))
@@ -524,12 +538,18 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
         private void UpdateSecondaryOrder(SalesOrderFormModel data)
         {
             Documents secondaryOrder = null;
+            Documents primaryOrder = null;
 
             if (data.DocEntry == 0) return;
 
             try
             {
                 secondaryOrder = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oOrders);
+
+                primaryOrder = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oOrders);
+
+                primaryOrder.GetByKey(Convert.ToInt32(data.RelatedOrder));
+
 
                 if (!secondaryOrder.GetByKey(data.DocEntry)) return;
 
@@ -555,6 +575,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.Comments = data.Comments;
                 secondaryOrder.DiscountPercent = (double)data.TotalDiscountPercent;
                 secondaryOrder.PaymentGroupCode = data.PaymentGroupCode;
+                secondaryOrder.Address2 = data.Address2;
+                secondaryOrder.ShipToCode = data.ShipToCode;
+                secondaryOrder.Address = data.Address;
+                secondaryOrder.PayToCode = data.PayToCode;
 
                 string taxCodeSecondary = AppConfig.Get(Constants.ConfigProps.TaxCodeSecondaryOrder);
                 var validLines = data.Lines
@@ -568,6 +592,8 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 var lineNumsToClose = new HashSet<int>(validLines
                     .Where(l => l.LineStatus == "C" && l.LineId >= 0)
                     .Select(l => l.LineId));
+
+                
 
                 for (int i = secondaryOrder.Lines.Count - 1; i >= 0; i--)
                 {
@@ -594,18 +620,28 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                     secondaryOrder.Lines.ItemCode = line.ItemCode;
 
-                    decimal currentQtySecondary = decimal.Round((decimal)secondaryOrder.Lines.Quantity, 2, MidpointRounding.AwayFromZero);
-                    if (currentQtySecondary != decimal.Round((decimal)line.Quantity, 2, MidpointRounding.AwayFromZero))
+                    // Verificamos si cambio la cantidad de la orden principal para aplicar o no la nueva cantidad en split B
+                    for(int j = 0; j < primaryOrder.Lines.Count ; j++)
                     {
-                        var (_, qtySecondary) = CalculateQuantities(line.Quantity, data.SplitPercentage);
-                        secondaryOrder.Lines.Quantity = (double)qtySecondary;
+                        primaryOrder.Lines.SetCurrentLine(j);
+                        if (primaryOrder.Lines.LineNum == secondaryOrder.Lines.LineNum)
+                        {
+                            decimal oldQtyPrimary = decimal.Round((decimal)primaryOrder.Lines.Quantity, 2, MidpointRounding.AwayFromZero);
+                            decimal currQtyPrimary = decimal.Round((decimal)line.Quantity, 2, MidpointRounding.AwayFromZero);
+                            if (oldQtyPrimary != currQtyPrimary)
+                            {
+                                var (_, qtySecondary) = CalculateQuantities(line.Quantity, data.SplitPercentage);
+                                secondaryOrder.Lines.Quantity = (double)qtySecondary;
+                            }
+                        }
                     }
+
 
                     var whsCode = line.WhsCode;
                     if (!string.IsNullOrWhiteSpace(whsCode))
                         secondaryOrder.Lines.WarehouseCode = whsCode;
 
-                    secondaryOrder.Lines.Price = (double)line.UnitPrice;
+                    secondaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
                     secondaryOrder.Lines.TaxCode = taxCodeSecondary;
 
                     if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)
@@ -632,7 +668,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     if (!string.IsNullOrWhiteSpace(whsCode))
                         secondaryOrder.Lines.WarehouseCode = whsCode;
 
-                    secondaryOrder.Lines.Price = (double)line.UnitPrice;
+                    secondaryOrder.Lines.UnitPrice = (double)line.UnitPrice;
                     secondaryOrder.Lines.TaxCode = taxCodeSecondary;
 
                     if (int.TryParse(line.UomEntry, out int uomEntry) && uomEntry > 0)

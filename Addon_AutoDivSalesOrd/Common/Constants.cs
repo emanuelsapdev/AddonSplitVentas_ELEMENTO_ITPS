@@ -87,6 +87,10 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_DiscPrcnt = "24";
             public const string Head_PaymentGroupCode = "47";
             public const string Head_Money = "70";
+            public const string Head_Address2 = "92";
+            public const string Head_ShipToCode = "40";
+            public const string Head_Address = "6";
+            public const string Head_PayToDate = "226";
 
             public const string Det_ItemCode = "1";
             public const string Det_Quantity = "11";
@@ -254,6 +258,7 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string ValidationNonStock = "No hay stock suficiente para el artículo.";
             public const string ValidationCannotUpdateSplitOrder = "No se puede actualizar una orden que ha sido dividida. Debe actualizar la orden principal.";
             public const string ValidationEntityCompanyUpdate = "No se puede actualizar una orden asignada a PRESUPUESTO que tenga Split aplicado.";
+            public const string ValidationEntityToUpdate = "No se puede cambiar el campo TIPO de la orden.";
             public const string ValidationDiscountNotAllowedForNormal = "No se puede aplicar un porcentaje de split del 75% en órdenes de tipo NORMAL (Empresa A).";
             public const string ValidationImportedOrderMixedItems = "Una Orden de Artículos Importados solo puede contener artículos con la Propiedad 'Importado' activa. Verifique las líneas del pedido.";
             public const string ValidationImportedOrderNoSplit = "Orden de Artículos Importados detectada. El split se fijó automáticamente al 100%% para NORMAL.";
