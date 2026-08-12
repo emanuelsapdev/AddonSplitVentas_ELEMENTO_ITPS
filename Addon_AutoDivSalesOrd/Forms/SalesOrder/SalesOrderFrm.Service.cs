@@ -171,6 +171,38 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.Address = data.Address;
                 primaryOrder.PayToCode = data.PayToCode;
 
+                // Dirección Facturación:
+                primaryOrder.AddressExtension.BillToStreet = data.StreetB;
+                primaryOrder.AddressExtension.BillToStreetNo = data.StreetNoB;
+                primaryOrder.AddressExtension.BillToBlock = data.BlockB;
+                primaryOrder.AddressExtension.BillToCity = data.CityB;
+                primaryOrder.AddressExtension.BillToZipCode = data.ZipCodeB;
+                primaryOrder.AddressExtension.BillToCounty = data.CountyB;
+                primaryOrder.AddressExtension.BillToState = data.StateB;
+                primaryOrder.AddressExtension.BillToCountry = data.CountryB;
+                primaryOrder.AddressExtension.BillToBuilding = data.BuildingB; 
+                primaryOrder.AddressExtension.BillToAddress2 = data.Address2B; 
+                primaryOrder.AddressExtension.BillToAddress3 = data.Address3B; 
+                primaryOrder.AddressExtension.BillToGlobalLocationNumber = data.GlbLocNumB; 
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaB").Value = data.TransportistaB; 
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneB").Value = data.DeliveryZoneB;
+
+                // Dirección Entrega:
+                primaryOrder.AddressExtension.ShipToStreet = data.StreetS;
+                primaryOrder.AddressExtension.ShipToStreetNo = data.StreetNoS;
+                primaryOrder.AddressExtension.ShipToBlock = data.BlockS;
+                primaryOrder.AddressExtension.ShipToCity = data.CityS;
+                primaryOrder.AddressExtension.ShipToZipCode = data.ZipCodeS;
+                primaryOrder.AddressExtension.ShipToCounty = data.CountyS;
+                primaryOrder.AddressExtension.ShipToState = data.StateS;
+                primaryOrder.AddressExtension.ShipToCountry = data.CountryS;
+                primaryOrder.AddressExtension.ShipToBuilding = data.BuildingS;
+                primaryOrder.AddressExtension.ShipToAddress2 = data.Address2S;
+                primaryOrder.AddressExtension.ShipToAddress3 = data.Address3S;
+                primaryOrder.AddressExtension.ShipToGlobalLocationNumber = data.GlbLocNumS;
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaS").Value = data.TransportistaS;
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneS").Value = data.DeliveryZoneS;
+
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity;
 
                 var validLines = data.Lines
@@ -286,6 +318,39 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.Address = data.Address;
                 secondaryOrder.PayToCode = data.PayToCode;
 
+                // Dirección Facturación:
+                secondaryOrder.AddressExtension.BillToStreet = data.StreetB;
+                secondaryOrder.AddressExtension.BillToStreetNo = data.StreetNoB;
+                secondaryOrder.AddressExtension.BillToBlock = data.BlockB;
+                secondaryOrder.AddressExtension.BillToCity = data.CityB;
+                secondaryOrder.AddressExtension.BillToZipCode = data.ZipCodeB;
+                secondaryOrder.AddressExtension.BillToCounty = data.CountyB;
+                secondaryOrder.AddressExtension.BillToState = data.StateB;
+                secondaryOrder.AddressExtension.BillToCountry = data.CountryB;
+                secondaryOrder.AddressExtension.BillToBuilding = data.BuildingB;
+                secondaryOrder.AddressExtension.BillToAddress2 = data.Address2B;
+                secondaryOrder.AddressExtension.BillToAddress3 = data.Address3B;
+                secondaryOrder.AddressExtension.BillToGlobalLocationNumber = data.GlbLocNumB;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaB").Value = data.TransportistaB;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneB").Value = data.DeliveryZoneB;
+
+                // Dirección Entrega:
+                secondaryOrder.AddressExtension.ShipToStreet = data.StreetS;
+                secondaryOrder.AddressExtension.ShipToStreetNo = data.StreetNoS;
+                secondaryOrder.AddressExtension.ShipToBlock = data.BlockS;
+                secondaryOrder.AddressExtension.ShipToCity = data.CityS;
+                secondaryOrder.AddressExtension.ShipToZipCode = data.ZipCodeS;
+                secondaryOrder.AddressExtension.ShipToCounty = data.CountyS;
+                secondaryOrder.AddressExtension.ShipToState = data.StateS;
+                secondaryOrder.AddressExtension.ShipToCountry = data.CountryS;
+                secondaryOrder.AddressExtension.ShipToBuilding = data.BuildingS;
+                secondaryOrder.AddressExtension.ShipToAddress2 = data.Address2S;
+                secondaryOrder.AddressExtension.ShipToAddress3 = data.Address3S;
+                secondaryOrder.AddressExtension.ShipToGlobalLocationNumber = data.GlbLocNumS;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaS").Value = data.TransportistaS;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneS").Value = data.DeliveryZoneS;
+
+
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity == Constants.FixedValues.EntityA ? Constants.FixedValues.EntityB : data.AssignedEntity;
 
                 if (!string.IsNullOrEmpty(data.RelatedOrder))
@@ -391,6 +456,38 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.ShipToCode = data.ShipToCode;
                 primaryOrder.Address = data.Address;
                 primaryOrder.PayToCode = data.PayToCode;
+
+                // Dirección Facturación:
+                primaryOrder.AddressExtension.BillToStreet = data.StreetB;
+                primaryOrder.AddressExtension.BillToStreetNo = data.StreetNoB;
+                primaryOrder.AddressExtension.BillToBlock = data.BlockB;
+                primaryOrder.AddressExtension.BillToCity = data.CityB;
+                primaryOrder.AddressExtension.BillToZipCode = data.ZipCodeB;
+                primaryOrder.AddressExtension.BillToCounty = data.CountyB;
+                primaryOrder.AddressExtension.BillToState = data.StateB;
+                primaryOrder.AddressExtension.BillToCountry = data.CountryB;
+                primaryOrder.AddressExtension.BillToBuilding = data.BuildingB;
+                primaryOrder.AddressExtension.BillToAddress2 = data.Address2B;
+                primaryOrder.AddressExtension.BillToAddress3 = data.Address3B;
+                primaryOrder.AddressExtension.BillToGlobalLocationNumber = data.GlbLocNumB;
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaB").Value = data.TransportistaB;
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneB").Value = data.DeliveryZoneB;
+
+                // Dirección Entrega:
+                primaryOrder.AddressExtension.ShipToStreet = data.StreetS;
+                primaryOrder.AddressExtension.ShipToStreetNo = data.StreetNoS;
+                primaryOrder.AddressExtension.ShipToBlock = data.BlockS;
+                primaryOrder.AddressExtension.ShipToCity = data.CityS;
+                primaryOrder.AddressExtension.ShipToZipCode = data.ZipCodeS;
+                primaryOrder.AddressExtension.ShipToCounty = data.CountyS;
+                primaryOrder.AddressExtension.ShipToState = data.StateS;
+                primaryOrder.AddressExtension.ShipToCountry = data.CountryS;
+                primaryOrder.AddressExtension.ShipToBuilding = data.BuildingS;
+                primaryOrder.AddressExtension.ShipToAddress2 = data.Address2S;
+                primaryOrder.AddressExtension.ShipToAddress3 = data.Address3S;
+                primaryOrder.AddressExtension.ShipToGlobalLocationNumber = data.GlbLocNumS;
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaS").Value = data.TransportistaS;
+                primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneS").Value = data.DeliveryZoneS;
 
                 var validLines = data.Lines
                     .Where(l => !string.IsNullOrWhiteSpace(l.ItemCode))
@@ -579,6 +676,38 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.ShipToCode = data.ShipToCode;
                 secondaryOrder.Address = data.Address;
                 secondaryOrder.PayToCode = data.PayToCode;
+
+                // Dirección Facturación:
+                secondaryOrder.AddressExtension.BillToStreet = data.StreetB;
+                secondaryOrder.AddressExtension.BillToStreetNo = data.StreetNoB;
+                secondaryOrder.AddressExtension.BillToBlock = data.BlockB;
+                secondaryOrder.AddressExtension.BillToCity = data.CityB;
+                secondaryOrder.AddressExtension.BillToZipCode = data.ZipCodeB;
+                secondaryOrder.AddressExtension.BillToCounty = data.CountyB;
+                secondaryOrder.AddressExtension.BillToState = data.StateB;
+                secondaryOrder.AddressExtension.BillToCountry = data.CountryB;
+                secondaryOrder.AddressExtension.BillToBuilding = data.BuildingB;
+                secondaryOrder.AddressExtension.BillToAddress2 = data.Address2B;
+                secondaryOrder.AddressExtension.BillToAddress3 = data.Address3B;
+                secondaryOrder.AddressExtension.BillToGlobalLocationNumber = data.GlbLocNumB;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaB").Value = data.TransportistaB;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneB").Value = data.DeliveryZoneB;
+
+                // Dirección Entrega:
+                secondaryOrder.AddressExtension.ShipToStreet = data.StreetS;
+                secondaryOrder.AddressExtension.ShipToStreetNo = data.StreetNoS;
+                secondaryOrder.AddressExtension.ShipToBlock = data.BlockS;
+                secondaryOrder.AddressExtension.ShipToCity = data.CityS;
+                secondaryOrder.AddressExtension.ShipToZipCode = data.ZipCodeS;
+                secondaryOrder.AddressExtension.ShipToCounty = data.CountyS;
+                secondaryOrder.AddressExtension.ShipToState = data.StateS;
+                secondaryOrder.AddressExtension.ShipToCountry = data.CountryS;
+                secondaryOrder.AddressExtension.ShipToBuilding = data.BuildingS;
+                secondaryOrder.AddressExtension.ShipToAddress2 = data.Address2S;
+                secondaryOrder.AddressExtension.ShipToAddress3 = data.Address3S;
+                secondaryOrder.AddressExtension.ShipToGlobalLocationNumber = data.GlbLocNumS;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaS").Value = data.TransportistaS;
+                secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneS").Value = data.DeliveryZoneS;
 
                 string taxCodeSecondary = AppConfig.Get(Constants.ConfigProps.TaxCodeSecondaryOrder);
                 var validLines = data.Lines

@@ -30,6 +30,38 @@ namespace Addon_AutoDivSalesOrd.Models
         public string Address { get; set; }
         public string PayToCode { get; set; }
 
+        // Direcciones ----------------------
+        public string StreetS { get; set; }
+        public string StreetNoS { get; set; }
+        public string BlockS { get; set; }
+        public string CityS { get; set; }
+        public string ZipCodeS { get; set; }
+        public string CountyS { get; set; }
+        public string StateS { get; set; }
+        public string CountryS { get; set; }
+        public string BuildingS { get; set; }
+        public string Address2S { get; set; }
+        public string Address3S { get; set; }
+        public string GlbLocNumS { get; set; }
+        public string TransportistaS { get; set; }
+        public string DeliveryZoneS { get; set; }
+
+        public string StreetB { get; set; }
+        public string StreetNoB { get; set; }
+        public string BlockB { get; set; }
+        public string CityB { get; set; }
+        public string ZipCodeB { get; set; }
+        public string CountyB { get; set; }
+        public string StateB { get; set; }
+        public string CountryB { get; set; }
+        public string BuildingB { get; set; }
+        public string Address2B { get; set; }
+        public string Address3B { get; set; }
+        public string GlbLocNumB { get; set; }
+        public string TransportistaB { get; set; }
+        public string DeliveryZoneB { get; set; }
+
+        // Lineas -------------------------
         public List<SalesOrderLineModel> Lines { get; set; } = new List<SalesOrderLineModel>();
     }
 

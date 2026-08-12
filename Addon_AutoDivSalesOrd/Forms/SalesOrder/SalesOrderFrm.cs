@@ -216,7 +216,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     decimal.TryParse(vImportedPerc, out decimal importedPerc);
                     decimal.TryParse(oDiscount.Value.Replace(".", ","), out decimal discountSap);
                     if (string.IsNullOrEmpty(itemCode) || discountSap == importedPerc) return;
-                    oDiscount.Value = vImportedPerc.Replace(",", ".");
+                    oDiscount.Value = importedPerc != 100m ? vImportedPerc.Replace(",", ".") : "0.00";
 
                 }
                 catch (Exception ex)

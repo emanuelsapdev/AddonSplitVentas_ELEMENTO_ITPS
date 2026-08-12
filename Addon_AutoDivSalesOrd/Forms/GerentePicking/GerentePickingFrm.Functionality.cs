@@ -7,103 +7,79 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
 {
     public partial class GerentePickingFrm
     {
-        /// <summary>
-        /// Calcula y asigna en memoria la cantidad a liberar (<see cref="GerentePickingFormRow.ToRelease"/>)
-        /// para cada fila del diccionario agrupado por artículo y split.
-        /// <para>
-        /// El cálculo considera la unidad de medida de cada línea mediante <c>ItemsPerUnit</c>:
-        /// <list type="bullet">
-        ///   <item><c>QtyOpen</c> se convierte a unidades base: <c>QtyOpen * ItemsPerUnit</c>.</item>
-        ///   <item>El prorrateo se realiza en unidades base.</item>
-        ///   <item><c>ToRelease</c> se devuelve en unidades de la orden: <c>ToRelease = ToReleaseEnBase / ItemsPerUnit</c>.</item>
-        /// </list>
-        /// </para>
-        /// <para>
-        /// Reglas de asignación por grupo de split dentro de un artículo:
-        /// <list type="bullet">
-        ///   <item>Líneas con <c>SplitPercentage == 100</c>: se asigna la cantidad completa pedida (<c>QtyOpen</c>),
-        ///         limitada al stock restante del artículo.</item>
-        ///   <item>Pares de split (<c>SplitPercentage != 100</c>): si el stock restante alcanza para ambas líneas
-        ///         se asigna <c>QtyOpen</c> completo a cada una; en caso contrario el stock disponible
-        ///         se prorratea según el <c>SplitPercentage</c> de cada fila.</item>
-        /// </list>
-        /// </para>
-        /// El stock disponible del artículo se ajusta previamente a un múltiplo entero de bultos completos
-        /// (docenas por bulto multiplicadas por 12), de modo que nunca se libera una cantidad que no cierre un bulto.
-        /// El stock disponible del artículo se consume en el orden en que aparecen los grupos.
-        /// </summary>
-        /// <param name="groupedRows">Resultado de <see cref="GroupBySplit"/>.</param>
-        private void CalculateToRelease(Dictionary<string, List<List<GerentePickingFormRow>>> groupedRows)
+        
+        private void CalculateToRelease(Dictionary<string, List<List<GerentePickingFormRow>>> filasAgrupadas)
         {
-            foreach (var itemEntry in groupedRows)
+            foreach (var entradaArticulo in filasAgrupadas)
             {
-                var firstRow = itemEntry.Value.SelectMany(g => g).First();
-                if (firstRow.ItemCode != "TN10000258") continue; // quitar
+                var primeraFila = entradaArticulo.Value.SelectMany(g => g).First();
+
+                //if (primeraFila.ItemCode != "TN10000258") continue; // quitar
+
                 // Ajustar el stock disponible a bultos completos
-                decimal availableStock = firstRow.AvailableStock;
-                decimal qtyDozenPerPack = GetQtyDozenPerPackage(firstRow.ItemCode);
-                // Convertir docenas a unidades: docenas * 12
-                decimal unitsPerPack = qtyDozenPerPack > 0 ? qtyDozenPerPack * 12m : 12m;
+                decimal stockDisponible = primeraFila.AvailableStock; // 46 * 12 = 552
+                decimal cantidadDocenasPorBulto = GetQtyDozenPerPackage(primeraFila.ItemCode); // 20
+                // AvailableStock ya está en la misma escala que QtyOpen * ItemsPerUnit,
+                // por lo que el tamaño de bulto se expresa directamente en esa escala (sin *12).
+                decimal unidadesPorBulto = cantidadDocenasPorBulto > 0 ? cantidadDocenasPorBulto * 12m : 0m;
 
-                decimal remainingStock = unitsPerPack > 0
-                    ? Math.Floor(availableStock / unitsPerPack) // * unitsPerPack
-                    : availableStock;
+                decimal stockRestante = unidadesPorBulto > 0
+                    ? Math.Floor(stockDisponible / unidadesPorBulto) * unidadesPorBulto
+                    : stockDisponible;
 
-                foreach (var splitGroup in itemEntry.Value)
+                foreach (var grupoSplit in entradaArticulo.Value)
                 {
-                    if (remainingStock <= 0m)
+                    if (stockRestante <= 0m)
                     {
-                        foreach (var row in splitGroup)
-                            row.ToRelease = 0m;
+                        foreach (var fila in grupoSplit)
+                            fila.ToRelease = 0m;
                         continue;
                     }
 
-                    bool isSplit = splitGroup.Any(r => r.SplitPercentage != 100m);
+                    decimal totalNecesarioEnBase = grupoSplit.Sum(r => r.QtyOpen * r.ItemsPerUnit);
 
-                    if (!isSplit)
-                        {
-                            foreach (var row in splitGroup)
-                            {
-                                decimal qtyOpenInBase = row.QtyOpen * row.ItemsPerUnit;
-                                decimal toReleaseInBase = Math.Floor(Math.Min(qtyOpenInBase, remainingStock));
-                                decimal calculatedToRelease = row.ItemsPerUnit > 0
-                                    ? Math.Floor(toReleaseInBase / row.ItemsPerUnit)
-                                    : 0m;
+                    // Monto candidato a liberar para el grupo, ajustado a un múltiplo entero de bultos
+                    decimal montoALiberarEnBase = Math.Min(totalNecesarioEnBase, stockRestante);
+                    montoALiberarEnBase = unidadesPorBulto > 0
+                        ? Math.Floor(montoALiberarEnBase / unidadesPorBulto) * unidadesPorBulto
+                        : montoALiberarEnBase;
 
-                                row.ToRelease = Math.Min(calculatedToRelease, row.AvailableForRelease);
+                    if (montoALiberarEnBase <= 0m)
+                    {
+                        // No alcanza para completar un bulto: no se libera nada y el stock
+                        // queda disponible para que lo complete un grupo posterior.
+                        foreach (var fila in grupoSplit)
+                            fila.ToRelease = 0m;
+                        continue;
+                    }
 
-                                remainingStock -= toReleaseInBase;
-                                if (remainingStock < 0m) remainingStock = 0m;
-                            }
-                        }
+                    if (montoALiberarEnBase >= totalNecesarioEnBase)
+                    {
+                        // Alcanza para cubrir toda la demanda del grupo
+                        foreach (var fila in grupoSplit)
+                            fila.ToRelease = Math.Min(Math.Floor(fila.QtyOpen), fila.AvailableForRelease);
+                    }
                     else
                     {
-                        // Par de split con porcentajes distintos de 100 %
-                        decimal totalNeededInBase = splitGroup.Sum(r => r.QtyOpen * r.ItemsPerUnit);
+                        // Stock insuficiente para cubrir toda la demanda, pero alcanza para liberar una parte
+                        decimal proporcionLiberacion = totalNecesarioEnBase > 0m
+                            ? montoALiberarEnBase / totalNecesarioEnBase
+                            : 0m;
 
-                        if (totalNeededInBase <= remainingStock)
+                        foreach (var fila in grupoSplit)
                         {
-                            foreach (var row in splitGroup)
-                                row.ToRelease = Math.Min(Math.Floor(row.QtyOpen), row.AvailableForRelease);
+                            decimal necesidadFilaEnBase = fila.QtyOpen * fila.ItemsPerUnit;
+                            decimal aLiberarEnBase = Math.Floor(necesidadFilaEnBase * proporcionLiberacion);
+                            decimal aLiberarCalculado = fila.ItemsPerUnit > 0
+                                ? Math.Floor(aLiberarEnBase / fila.ItemsPerUnit)
+                                : 0m;
 
-                            remainingStock -= totalNeededInBase;
-                        }
-                        else
-                        {
-                            // Stock insuficiente: prorratear según el porcentaje de split
-                            foreach (var row in splitGroup)
-                            {
-                                decimal toReleaseInBase = Math.Floor(remainingStock * row.SplitPercentage / 100m);
-                                decimal calculatedToRelease = row.ItemsPerUnit > 0
-                                    ? Math.Floor(toReleaseInBase / row.ItemsPerUnit)
-                                    : 0m;
-
-                                row.ToRelease = Math.Min(calculatedToRelease, row.AvailableForRelease);
-                            }
-
-                            remainingStock = 0m;
+                            fila.ToRelease = Math.Min(aLiberarCalculado, fila.AvailableForRelease);
                         }
                     }
+
+                    stockRestante -= montoALiberarEnBase;
+                    if (stockRestante < 0m) stockRestante = 0m;
                 }
             }
         }

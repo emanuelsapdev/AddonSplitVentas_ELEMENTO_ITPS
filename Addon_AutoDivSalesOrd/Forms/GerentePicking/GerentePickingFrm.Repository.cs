@@ -77,5 +77,55 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
                 if (oRec != null) MarshalGC.ReleaseComObject(oRec);
             }
         }
+
+        public decimal GetItemsPerUnit(string itemCode, string uomCode)
+        {
+            SAPbobsCOM.Recordset oRec = null;
+            try
+            {
+                oRec = (SAPbobsCOM.Recordset)ConnectionSDK.DIAPI.GetBusinessObject(SAPbobsCOM.BoObjectTypes.BoRecordset);
+
+                string article = (itemCode ?? string.Empty).Replace("'", "''");
+                string unitCode = (uomCode ?? string.Empty).Replace("'", "''");
+
+                string q = $@"
+                                SELECT
+                                    T0.""ItemCode"",
+                                    T1.""UgpEntry"",
+                                    T1.""UgpCode"",
+                                    T1.""UgpName"",
+                                    T2.""UomCode""  AS ""UnidadBase"",
+                                    T2.""UomName""  AS ""NombreUnidadBase"",
+                                    T4.""UomCode""  AS ""UnidadConsultada"",
+                                    CASE
+                                        WHEN T4.""UomEntry"" = T1.""BaseUom"" THEN 1
+                                        ELSE T3.""BaseQty"" / T3.""AltQty""
+                                    END AS ""FactorConversionAUnidadBase""
+                                FROM ""OITM"" T0
+                                INNER JOIN ""OUGP"" T1 ON T1.""UgpEntry"" = T0.""UgpEntry""
+                                INNER JOIN ""OUOM"" T2 ON T2.""UomEntry"" = T1.""BaseUom""
+                                INNER JOIN ""OUOM"" T4 ON T4.""UomCode"" = '{unitCode}'
+                                LEFT JOIN  ""UGP1"" T3
+                                       ON T3.""UgpEntry"" = T1.""UgpEntry""
+                                      AND T3.""UomEntry"" = T4.""UomEntry""
+                                WHERE T0.""ItemCode"" = '{article}'";
+
+                oRec.DoQuery(q);
+
+                if (oRec.EoF)
+                    return 0m;
+
+                return Convert.ToDecimal(oRec.Fields.Item("FactorConversionAUnidadBase").Value);
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Error(ex.Message);
+                return 0m;
+            }
+            finally
+            {
+                if (oRec != null) MarshalGC.ReleaseComObject(oRec);
+            }
+        }
     }
 }

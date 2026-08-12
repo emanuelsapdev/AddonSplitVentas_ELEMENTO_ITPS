@@ -20,6 +20,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
             DBDataSource db = oForm.DataSources.DBDataSources.Item(Constants.DataSources.SalesOrderHeader);
             DBDataSource db1 = oForm.DataSources.DBDataSources.Item(Constants.DataSources.SalesOrderLines);
+            DBDataSource db12 = oForm.DataSources.DBDataSources.Item(Constants.DataSources.SalesOrderAddresses);
 
             // HEADER
             var oCardCode = (EditText)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_CardCode).Specific;
@@ -38,6 +39,69 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             var oAddress = (EditText)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Address).Specific;
             var oPayToCode = (ComboBox)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_PayToDate).Specific;
             var oMtx = (Matrix)oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Matrix).Specific;
+
+            // Dirección Entrega
+            var oStreetS = db12.GetValue("StreetS", 0);
+            var oStreetNoS = db12.GetValue("StreetNoS", 0);
+            var oBlockS = db12.GetValue("BlockS", 0);
+            var oCityS = db12.GetValue("CityS", 0);
+            var oZipCodeS = db12.GetValue("ZipCodeS", 0);
+            var oCountyS = db12.GetValue("CountyS", 0);
+            var oStateS = db12.GetValue("StateS", 0);
+            var oCountryS = db12.GetValue("CountryS", 0);
+            var oBuildingS = db12.GetValue("BuildingS", 0);
+            var oAddress2S = db12.GetValue("Address2S", 0);
+            var oAddress3S = db12.GetValue("Address3S", 0);
+            var oGlbLocNumS = db12.GetValue("GlbLocNumS", 0);
+            var oTransportistaS = db12.GetValue("U_ITPS_TransportistaS", 0);
+            var oDeliveryZoneS = db12.GetValue("U_ITPS_DeliveryZoneS", 0);
+
+            mdl.StreetS = oStreetS;
+            mdl.StreetNoS = oStreetNoS;
+            mdl.BlockS = oBlockS;
+            mdl.CityS = oCityS;
+            mdl.ZipCodeS = oZipCodeS;
+            mdl.CountyS = oCountyS;
+            mdl.StateS = oStateS;
+            mdl.CountryS = oCountryS;
+            mdl.BuildingS = oBuildingS;
+            mdl.Address2S = oAddress2S;
+            mdl.Address3S = oAddress3S;
+            mdl.GlbLocNumS = oGlbLocNumS;
+            mdl.TransportistaS = oTransportistaS;
+            mdl.DeliveryZoneS = oDeliveryZoneS;
+
+            
+            // Dirección Facturación
+            var oStreetB = db12.GetValue("StreetB", 0);
+            var oStreetNoB = db12.GetValue("StreetNoB", 0);
+            var oBlockB = db12.GetValue("BlockB", 0);
+            var oCityB = db12.GetValue("CityB", 0);
+            var oZipCodeB = db12.GetValue("ZipCodeB", 0);
+            var oCountyB = db12.GetValue("CountyB", 0);
+            var oStateB = db12.GetValue("StateB", 0);
+            var oCountryB = db12.GetValue("CountryB", 0);
+            var oBuildingB = db12.GetValue("BuildingB", 0);
+            var oAddress2B = db12.GetValue("Address2B", 0);
+            var oAddress3B = db12.GetValue("Address3B", 0);
+            var oGlbLocNumB = db12.GetValue("GlbLocNumB", 0);
+            var oTransportistaB = db12.GetValue("U_ITPS_TransportistaB", 0);
+            var oDeliveryZoneB = db12.GetValue("U_ITPS_DeliveryZoneB", 0);
+
+            mdl.StreetB = oStreetB;
+            mdl.StreetNoB = oStreetNoB;
+            mdl.BlockB = oBlockB;
+            mdl.CityB = oCityB;
+            mdl.ZipCodeB = oZipCodeB;
+            mdl.CountyB = oCountyB;
+            mdl.StateB = oStateB;
+            mdl.CountryB = oCountryB;
+            mdl.BuildingB = oBuildingB;
+            mdl.Address2B = oAddress2B;
+            mdl.Address3B = oAddress3B;
+            mdl.GlbLocNumB = oGlbLocNumB;
+            mdl.TransportistaB = oTransportistaB;
+            mdl.DeliveryZoneB = oDeliveryZoneB;
 
             mdl.CardCode = oCardCode.Value;
 

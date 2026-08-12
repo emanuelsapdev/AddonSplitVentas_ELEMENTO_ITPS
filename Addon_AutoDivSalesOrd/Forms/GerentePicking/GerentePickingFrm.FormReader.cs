@@ -11,45 +11,51 @@ namespace Addon_AutoDivSalesOrd.Forms.GerentePicking
     public partial class GerentePickingFrm
     {
 
-        private GerentePickingForm ReadRows(Matrix oMtx, Func<string, string, decimal> getAvailableStock)
+        private GerentePickingForm ReadRows(
+            Matrix oMtx,
+            Func<string, string, decimal> getAvailableStock,
+            Func<string, string, decimal> getItemsPerUnit)
         {
             var gerentePickingForm = new GerentePickingForm();
-        
-                for (int i = 1; i <= oMtx.RowCount; i++)
+
+            for (int i = 1; i <= oMtx.RowCount; i++)
+            {
+                //var selected = ((CheckBox)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_Select, i));
+
+                //if (!selected.Checked) continue;
+
+                var relatedOrder = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_RelatedOrd, i)).Value;
+                var docEntry = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_DocEntry, i)).Value;
+                var lineNum = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_LineNum, i)).Value;
+                var lineIdRdr1 = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_LineIdRdr1, i)).Value;
+                var itemCode = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_ItemCode, i)).Value;
+                var whsCode = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_WhsCode, i)).Value;
+                var splitPercentage = ((ComboBox)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_SplitPercentage, i)).Value;
+                var tipo = ((ComboBox)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_Tipo, i)).Value;
+                var qtyOpen = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_QtyOpen, i)).Value;
+                var uomCode = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_UomCode, i)).Value;
+                var availableForRelease = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_AvailableForRelease, i)).Value;
+
+                var row = new GerentePickingFormRow
                 {
-                    
-                    var relatedOrder = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_RelatedOrd, i)).Value;
-                    var docEntry = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_DocEntry, i)).Value;
-                    var lineNum = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_LineNum, i)).Value;
-                    var lineIdRdr1 = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_LineIdRdr1, i)).Value;
-                    var itemCode = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_ItemCode, i)).Value;
-                    var whsCode = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_WhsCode, i)).Value;
-                    var splitPercentage = ((ComboBox)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_SplitPercentage, i)).Value;
-                    var tipo = ((ComboBox)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_Tipo, i)).Value;
-                    var qtyOpen = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_QtyOpen, i)).Value;
-                    var itemsPerUnit = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_ItemsPerUnit, i)).Value;
-                    var availableForRelease = ((EditText)oMtx.GetCellSpecific(Constants.GerentePicking_FieldsUIDs.Det_AvailableForRelease, i)).Value;
+                    DocEntry = Convert.ToInt32(docEntry),
+                    LineNum = Convert.ToInt32(lineNum),
+                    LineIdRdr1 = Convert.ToInt32(lineIdRdr1),
+                    ItemCode = itemCode,
+                    WhsCode = whsCode,
+                    RelatedOrd = !string.IsNullOrEmpty(relatedOrder) ? Convert.ToInt32(relatedOrder) : -1,
+                    SplitPercentage = Convert.ToDecimal(splitPercentage),
+                    Tipo = tipo,
+                    QtyOpen = !string.IsNullOrEmpty(qtyOpen) ? Convert.ToDecimal(qtyOpen) : 0m,
+                    ItemsPerUnit = getItemsPerUnit(itemCode, uomCode),
+                    AvailableForRelease = !string.IsNullOrEmpty(availableForRelease) ? decimal.Parse(availableForRelease, CultureInfo.GetCultureInfo("es-AR")) : 0m,
+                };
 
-                    var row = new GerentePickingFormRow
-                    {
-                        DocEntry = Convert.ToInt32(docEntry),
-                        LineNum = Convert.ToInt32(lineNum),
-                        LineIdRdr1 = Convert.ToInt32(lineIdRdr1),
-                        ItemCode = itemCode,
-                        WhsCode = whsCode,
-                        RelatedOrd = !string.IsNullOrEmpty(relatedOrder) ? Convert.ToInt32(relatedOrder) : -1,
-                        SplitPercentage = Convert.ToDecimal(splitPercentage),
-                        Tipo = tipo,
-                        QtyOpen = !string.IsNullOrEmpty(qtyOpen) ? Convert.ToDecimal(qtyOpen) : 0m,
-                        ItemsPerUnit = !string.IsNullOrEmpty(itemsPerUnit) ? Convert.ToDecimal(itemsPerUnit.Replace(".", ",")) : 1m,
-                        AvailableForRelease = !string.IsNullOrEmpty(availableForRelease) ? decimal.Parse(availableForRelease, CultureInfo.GetCultureInfo("es-AR")) : 0m,
-                    };
+                decimal stock = getAvailableStock(row.ItemCode, row.WhsCode);
+                row.AvailableStock = stock;
 
-                    decimal stock = getAvailableStock(row.ItemCode, row.WhsCode);
-                    row.AvailableStock = stock;
-
-                    gerentePickingForm.Rows.Add(row);
-                }
+                gerentePickingForm.Rows.Add(row);
+            }
 
             return gerentePickingForm;
         }

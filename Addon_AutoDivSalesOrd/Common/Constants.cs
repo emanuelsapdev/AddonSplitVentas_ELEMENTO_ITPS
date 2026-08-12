@@ -136,6 +136,7 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Det_ToRelease = "3";
             public const string Det_QtyOpen = "4";
             public const string Det_ItemsPerUnit = "10000064";
+            public const string Det_UomCode = "1470000128";
             public const string Det_WhsCode = "6";
             public const string Det_ItemCode = "8";
             public const string Det_DocEntry = "23";
