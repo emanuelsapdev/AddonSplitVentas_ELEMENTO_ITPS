@@ -148,8 +148,9 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_CategoryClient).Value = data.CategoryClient;
                 string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",",".");
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = Constants.FixedValues.EntityA; // data.AssignedEntity;
 
-                if(data.GlobalAgreement > 0) 
+                if (data.GlobalAgreement > 0) 
                     primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
 
                 var docDateText = data.DocDate;
@@ -203,7 +204,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_TransportistaS").Value = data.TransportistaS;
                 primaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneS").Value = data.DeliveryZoneS;
 
-                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity;
+                
 
                 var validLines = data.Lines
                     .Where(l => !string.IsNullOrWhiteSpace(l.ItemCode))
@@ -295,7 +296,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",",".");
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
-
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = Constants.FixedValues.EntityB;
 
                 var docDateText = data.DocDate;
                 var docDueDateText = data.DocDueDate;
@@ -351,7 +352,6 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.AddressExtension.UserFields.Fields.Item("U_ITPS_DeliveryZoneS").Value = data.DeliveryZoneS;
 
 
-                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity == Constants.FixedValues.EntityA ? Constants.FixedValues.EntityB : data.AssignedEntity;
 
                 if (!string.IsNullOrEmpty(data.RelatedOrder))
                 {
@@ -437,7 +437,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_SplitPercentage).Value = (double)data.SplitPercentage;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ImportedPercentage).Value = (double)data.ImportedPercentage;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_CategoryClient).Value = data.CategoryClient;
-                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity;
+                //primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity;
                 string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",", ".");
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
@@ -653,7 +653,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_SplitPercentage).Value = (double)(100m - data.SplitPercentage);
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ImportedPercentage).Value = (double)data.ImportedPercentage;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_CategoryClient).Value = data.CategoryClient;
-                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity == Constants.FixedValues.EntityA ? Constants.FixedValues.EntityB : data.AssignedEntity;
+                //secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = data.AssignedEntity == Constants.FixedValues.EntityA ? Constants.FixedValues.EntityB : data.AssignedEntity;
                 string totalDiscPerc = data.TotalDiscountPercent.ToString().Replace(",", ".");
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
@@ -720,9 +720,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                 var lineNumsToClose = new HashSet<int>(validLines
                     .Where(l => l.LineStatus == "C" && l.LineId >= 0)
-                    .Select(l => l.LineId));
-
-                
+                    .Select(l => l.LineId));                
 
                 for (int i = secondaryOrder.Lines.Count - 1; i >= 0; i--)
                 {
