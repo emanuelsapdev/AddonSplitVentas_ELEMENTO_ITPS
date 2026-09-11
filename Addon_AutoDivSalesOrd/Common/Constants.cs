@@ -51,6 +51,7 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_CategoryClient = "U_CATEGORIA_CLIENTE";
             public const string Head_AssignedEntity = "U_Tipo";
             public const string Head_GlobalAgree = "U_ITPS_NRO_AC";
+            public const string Head_AgreementPriceList = "U_ITPS_AgreementPriceList";
             public const string Head_RelatedOrder = "U_ITPS_RelatedOrder";
             public const string Head_ItpsDiscount = "U_ITPS_DESCUENTO";
             public const string Head_DocDate = "DocDate";
@@ -80,6 +81,7 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_AssignedEntity = "U_Tipo";
             public const string Head_RelatedOrder = "U_ITPS_RelatedOrder";
             public const string Head_ItpsDiscount = "U_ITPS_DESCUENTO";
+            public const string Head_AgreementPriceList = "U_ITPS_AgreementPriceList";
             public const string Head_DocDate = "10";
             public const string Head_DocDueDate = "12";
             public const string Head_TaxDate = "46";
@@ -104,6 +106,7 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Det_LineId = "110";
             public const string Det_LineStatus = "40";
             public const string Det_AgrNo = "1250002129";
+            public const string Det_NumberAgr = "1980002193";
 
         }
 

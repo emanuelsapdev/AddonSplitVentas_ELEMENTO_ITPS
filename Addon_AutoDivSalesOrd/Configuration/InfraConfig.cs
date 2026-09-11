@@ -230,6 +230,13 @@ namespace Addon_AutoDivSalesOrd.Configuration
                     type: BoFieldTypes.db_Numeric,
                     size: 10);
 
+                InfraDataService.CreateUserField(
+                    tableName: "ORDR",
+                    fieldName: "ITPS_AgreementPriceList",
+                    desc: "Lista de precio del Acuerdo Global",
+                    type: BoFieldTypes.db_Alpha,
+                    size: 150);
+
                 // Sales Order UDFs End
 
                 // Direcciones de socios de negocios
