@@ -14,8 +14,8 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         /// </summary>
         private int ProcessImportJournalEntry(int invoiceDocEntry)
         {
-            (int orderDocEntry, decimal importedPerc) = GetImportOrderDocEntryAndImportedPercFromInvoice(invoiceDocEntry);
-            if (orderDocEntry == -1 || importedPerc == 100m) return -1;
+            (int docEntry, decimal importedPerc) = GetImportOrderDocEntryAndImportedPercFromInvoice(invoiceDocEntry);
+            if (docEntry == -1 || importedPerc == 100m) return -1;
 
             var (cardCode, totalDiscount) = GetInvoiceImportDiscountData(invoiceDocEntry, importedPerc);
 
