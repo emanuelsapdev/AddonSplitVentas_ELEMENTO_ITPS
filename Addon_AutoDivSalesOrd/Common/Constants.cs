@@ -110,6 +110,15 @@ namespace Addon_AutoDivSalesOrd.Common
 
         }
 
+        public static class Invoice_FieldsUIDs
+        {
+            public const string Head_Matrix = "38";
+            public const string Head_ImportedPercentage = "U_ITPS_ImportedPercentage";
+
+
+            public const string Det_ItemCode = "1";
+            public const string Det_Discount = "15";
+        }
 
 
         public static class GerentePicking_Fields
