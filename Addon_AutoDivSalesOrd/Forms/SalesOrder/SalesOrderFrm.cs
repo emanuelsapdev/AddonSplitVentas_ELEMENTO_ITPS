@@ -7,6 +7,7 @@ using SAPbobsCOM;
 using SAPbouiCOM;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -186,6 +187,8 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                
             }
 
+            
+
             // SALIR DEL FOCO DE LA COLUMNA "ItemCode"
             else if(pVal.EventType == BoEventTypes.et_LOST_FOCUS && pVal.ActionSuccess
                      && pVal.ItemUID == Constants.SalesOrder_FieldsUIDs.Head_Matrix 
@@ -210,14 +213,16 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                     string q = $@"SELECT 1 FROM OITM WHERE ""ItemCode"" = '{itemCode}' AND ""QryGroup1"" = 'Y'";
                     oRec.DoQuery(q);
-                    if (oRec.RecordCount == 0) return;
+                    if (oRec.RecordCount > 0)
+                    {
+                        EditText oDiscount = oMtx.Columns.Item(Constants.SalesOrder_FieldsUIDs.Det_Discount).Cells.Item(pVal.Row).Specific;
+                        decimal.TryParse(vImportedPerc, out decimal importedPerc);
+                        decimal.TryParse(oDiscount.Value.Replace(".", ","), out decimal discountSap);
+                        if (!string.IsNullOrEmpty(itemCode) && discountSap != importedPerc)
+                            oDiscount.Value = importedPerc != 100m ? vImportedPerc.Replace(",", ".") : "0.00";
+                    }
 
-                    EditText oDiscount = oMtx.Columns.Item(Constants.SalesOrder_FieldsUIDs.Det_Discount).Cells.Item(pVal.Row).Specific;
-                    decimal.TryParse(vImportedPerc, out decimal importedPerc);
-                    decimal.TryParse(oDiscount.Value.Replace(".", ","), out decimal discountSap);
-                    if (string.IsNullOrEmpty(itemCode) || discountSap == importedPerc) return;
-                    oDiscount.Value = importedPerc != 100m ? vImportedPerc.Replace(",", ".") : "0.00";
-
+                    ApplyAgreementPriceToLine(oForm, pVal.Row);
                 }
                 catch (Exception ex)
                 {
@@ -234,6 +239,60 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
 
                     if (oRec != null) Marshal.ReleaseComObject(oRec);
                     
+                }
+            }
+
+            else if (pVal.EventType == BoEventTypes.et_LOST_FOCUS && pVal.ActionSuccess
+                     && pVal.ItemUID == Constants.SalesOrder_FieldsUIDs.Head_Matrix
+                     && pVal.ColUID == Constants.SalesOrder_FieldsUIDs.Det_ItemCode
+                     && pVal.FormMode == (int)SAPbouiCOM.BoFormMode.fm_UPDATE_MODE)
+            {
+                SAPbouiCOM.Form oForm = null;
+                try
+                {
+                    oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
+                    oForm.Freeze(true);
+                    ApplyAgreementPriceToLine(oForm, pVal.Row);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error(ex.Message);
+                    BubbleEvent = false;
+                }
+                finally
+                {
+                    if (oForm != null)
+                    {
+                        oForm.Freeze(false);
+                        Marshal.ReleaseComObject(oForm);
+                    }
+                }
+            }
+
+            else if (pVal.EventType == BoEventTypes.et_LOST_FOCUS && pVal.ActionSuccess
+                     && pVal.ItemUID == Constants.SalesOrder_FieldsUIDs.Head_Matrix
+                     && pVal.ColUID == Constants.SalesOrder_FieldsUIDs.Det_NumberAgr
+                     && (pVal.FormMode == (int)SAPbouiCOM.BoFormMode.fm_ADD_MODE || pVal.FormMode == (int)SAPbouiCOM.BoFormMode.fm_UPDATE_MODE))
+            {
+                SAPbouiCOM.Form oForm = null;
+                try
+                {
+                    oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
+                    oForm.Freeze(true);
+                    ApplyAgreementPriceToLine(oForm, pVal.Row);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error(ex.Message);
+                    BubbleEvent = false;
+                }
+                finally
+                {
+                    if (oForm != null)
+                    {
+                        oForm.Freeze(false);
+                        Marshal.ReleaseComObject(oForm);
+                    }
                 }
             }
 
@@ -305,6 +364,36 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 }
             }
 
+        }
+
+        private void ApplyAgreementPriceToLine(SAPbouiCOM.Form oForm, int row)
+        {
+            if (oForm == null || row <= 0)
+                return;
+
+            Matrix oMtx = oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_Matrix).Specific;
+
+            var oItemCode = (EditText)oMtx.GetCellSpecific(Constants.SalesOrder_FieldsUIDs.Det_ItemCode, row);
+            var oAgrNo = (EditText)oMtx.GetCellSpecific(Constants.SalesOrder_FieldsUIDs.Det_AgrNo, row);
+            var oPrice = (EditText)oMtx.GetCellSpecific(Constants.SalesOrder_FieldsUIDs.Det_Price, row);
+
+            string itemCode = oItemCode.Value?.Trim();
+            string agreementNumber = oAgrNo.Value?.Trim();
+
+            if (string.IsNullOrWhiteSpace(itemCode) || string.IsNullOrWhiteSpace(agreementNumber))
+                return;
+
+            if (row == 1 && int.TryParse(agreementNumber, out int firstLineAgreement))
+            {
+                string agreementPriceListName = GetAgreementPriceListName(firstLineAgreement);
+                oForm.Items.Item(Constants.SalesOrder_FieldsUIDs.Head_AgreementPriceList).Specific.Value = agreementPriceListName;
+            }
+
+            decimal? price = GetLinePriceByAgreement(itemCode, agreementNumber);
+            if (!price.HasValue)
+                return;
+
+            oPrice.Value = price.Value.ToString("0,00");
         }
 
         public void OnFormDataEvent(ref BusinessObjectInfo boi, out bool BubbleEvent)

@@ -9,11 +9,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
     public partial class SalesInvoiceFrm
     {
         /// <summary>
-        /// Determina si una Factura de Venta proviene de una Orden de Artículos Importados.
-        /// Traza la cadena OINV → INV1 → ODLN → DLN1 → ORDR → RDR1 → OITM
-        /// y verifica que al menos una línea tenga QryGroup1 = 'Y'.
+        /// Detecta si una Factura de Venta es de importados.
+        /// Obtiene los campos U_Importado y U_ITPS_ImportedPercentage directamente de la tabla OINV.
         /// </summary>
-        /// <returns>DocEntry de la ORDR de importados, o -1 si no aplica.</returns>
+        /// <returns>DocEntry de la factura (-1 si no es importada) y el porcentaje de importados.</returns>
         private (int docEntry, decimal importedPerc) GetImportOrderDocEntryAndImportedPercFromInvoice(int invoiceDocEntry)
         {
             Recordset rs = null;
@@ -23,26 +22,18 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
             {
                 rs = (Recordset)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.BoRecordset);
 
-                // Traza: OINV → INV1 (BaseType=15=ODLN) → DLN1 (BaseType=17=ORDR) → RDR1 → OITM
-                // Devuelve el DocEntry de la ORDR si todos sus artículos son importados (QryGroup1='Y')
+                // Solo obtiene de OINV los campos de bandera de importados y su porcentaje
                 string q = $@"
-                    SELECT TOP 1 T3.""DocEntry"", T3.""U_ITPS_ImportedPercentage""
+                    SELECT T0.""DocEntry"", T0.""U_ITPS_ImportedPercentage""
                     FROM OINV T0
-                    INNER JOIN INV1  T1 ON T1.""DocEntry"" = T0.""DocEntry""  AND T1.""BaseType"" = 15
-                    INNER JOIN DLN1  T2 ON T2.""DocEntry"" = T1.""BaseEntry"" AND T2.""LineNum"" = T1.""BaseLine"" AND T2.""BaseType"" = 17
-                    INNER JOIN ORDR  T3 ON T3.""DocEntry"" = T2.""BaseEntry""
-                    INNER JOIN RDR1  T4 ON T4.""DocEntry"" = T3.""DocEntry""
-                    INNER JOIN OITM  T5 ON T5.""ItemCode"" = T4.""ItemCode""
-                    WHERE T0.""DocEntry"" = {invoiceDocEntry}
-                    GROUP BY T3.""DocEntry"", T3.""U_ITPS_ImportedPercentage""
-                    HAVING COUNT(T4.""LineNum"") = SUM(CASE WHEN T5.""{Constants.ItemImport.OitmImportProperty}"" = '{Constants.FixedValues.Yes}' THEN 1 ELSE 0 END)";
+                    WHERE T0.""DocEntry"" = {invoiceDocEntry} AND T0.""U_Importado"" = 'Y'";
 
                 rs.DoQuery(q);
                 
-                if (rs.EoF) ;
+                if (rs.EoF) return (docEntry, importedPerc);
 
                 docEntry = Convert.ToInt32(rs.Fields.Item(0).Value);
-                importedPerc = Convert.ToDecimal(rs.Fields.Item(1).Value);
+                importedPerc = Convert.ToDecimal(rs.Fields.Item(1).Value ?? 0);
                 return (docEntry, importedPerc);
             }
             finally

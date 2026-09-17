@@ -91,6 +91,70 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     Marshal.ReleaseComObject(rs);
             }
         }
+
+        private decimal? GetLinePriceByAgreement(string itemCode, string agreementNumber)
+        {
+            if (string.IsNullOrWhiteSpace(itemCode) || string.IsNullOrWhiteSpace(agreementNumber))
+                return null;
+
+            Recordset rs = null;
+            try
+            {
+                rs = ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.BoRecordset);
+
+                string safeItemCode = itemCode.Replace("'", "''");
+                string safeAgreementNumber = agreementNumber.Replace("'", "''");
+
+                string q = $@"SELECT T2.""Price""
+                             FROM OOAT T0
+                             INNER JOIN ITM1 T2
+                                 ON T2.""PriceList"" = T0.""ListNum""
+                                AND T2.""ItemCode"" = '{safeItemCode}'
+                             WHERE TO_VARCHAR(T0.""AbsID"") = '{safeAgreementNumber}'
+                               AND T0.""BpType"" = 'C'";
+
+                rs.DoQuery(q);
+
+                if (rs.EoF || rs.Fields.Item(0).Value == null)
+                    return null;
+
+                return Convert.ToDecimal(rs.Fields.Item(0).Value);
+            }
+            finally
+            {
+                if (rs != null)
+                    Marshal.ReleaseComObject(rs);
+            }
+        }
+
+        private string GetAgreementPriceListName(int globalAgreement)
+        {
+            if (globalAgreement <= 0)
+                return string.Empty;
+
+            Recordset rs = null;
+            try
+            {
+                rs = ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.BoRecordset);
+                string q = $@"SELECT T1.""ListName""
+                             FROM OOAT T0
+                             INNER JOIN OPLN T1 ON T1.""ListNum"" = T0.""ListNum""
+                             WHERE TO_VARCHAR(T0.""AbsID"") = '{globalAgreement}'
+                               AND T0.""BpType"" = 'C'";
+                rs.DoQuery(q);
+
+                if (rs.EoF || rs.Fields.Item(0).Value == null)
+                    return string.Empty;
+
+                return rs.Fields.Item(0).Value.ToString().Trim();
+            }
+            finally
+            {
+                if (rs != null)
+                    Marshal.ReleaseComObject(rs);
+            }
+        }
+
         private void SyncDeliveryZone(int entryPrimary, int entrySecondary)
         {
             Recordset rs = null;

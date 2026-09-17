@@ -117,8 +117,17 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             string assignedEntityValue = db.GetValue(Constants.SalesOrder_Fields.Head_AssignedEntity, 0).Trim();
             mdl.AssignedEntity = string.IsNullOrEmpty(assignedEntityValue) ? string.Empty : assignedEntityValue;
 
+            string firstLineGlobalAgree = string.Empty;
+            if (oMtx.RowCount >= 1)
+            {
+                var oFirstLineAgrNo = (EditText)oMtx.GetCellSpecific(Constants.SalesOrder_FieldsUIDs.Det_AgrNo, 1);
+                firstLineGlobalAgree = oFirstLineAgrNo.Value?.Trim();
+            }
+
             string globalAgree = db.GetValue(Constants.SalesOrder_Fields.Head_GlobalAgree, 0).Trim();
             mdl.GlobalAgreement = int.TryParse(globalAgree, out int agreement) ? agreement : 0;
+            
+            mdl.AgreementPriceList = db.GetValue(Constants.SalesOrder_Fields.Head_AgreementPriceList, 0).Trim();
 
             mdl.DocDate = oDocDate.Value;
             mdl.DocDueDate = oDocDueDate.Value;
