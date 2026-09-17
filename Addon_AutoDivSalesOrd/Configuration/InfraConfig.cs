@@ -274,23 +274,35 @@ namespace Addon_AutoDivSalesOrd.Configuration
                     type: BoFieldTypes.db_Numeric,
                     linkedSystemObject: UDFLinkedSystemObjectTypesEnum.ulInvoices);
 
-                InfraDataService.CreateViewIfNotExists(Constants.DbViews.StockSplitVta, @"SELECT
-	                                                                                        CASE
-                                                                                                WHEN T1.""UgpEntry"" = -1
-                                                                                                    OR T2.""AltQty"" IS NULL
-                                                                                                    OR T2.""AltQty"" = 0
-                                                                                                    THEN T0.""OnHand""                              -- sin grupo de UoM: ya está en base
-                                                                                                ELSE T0.""OnHand"" * (T2.""BaseQty"" / T2.""AltQty"")   -- conversión a unidades base
-                                                                                            END                                             AS ""AvailableStock_Unidades_Base"",
-	                                                                                        T0.""ItemCode"",
-	                                                                                        T0.""WhsCode"",
-	                                                                                        T0.""ItemCode"" AS ""kEY_ItemCode"" ,
-	                                                                                        T0.""WhsCode"" AS ""kEY_WhsCode""
-                                                                                        FROM
-	                                                                                        OITW T0
-                                                                                        INNER JOIN OITM T1 ON T1.""ItemCode"" = T0.""ItemCode""
-                                                                                        LEFT  JOIN UGP1 T2 ON T2.""UgpEntry"" = T1.""UgpEntry"" AND T2.""UomEntry"" = T1.""IUoMEntry""
-                                                                                        LEFT  JOIN OUOM T3 ON T3.""UomEntry"" = T1.""IUoMEntry"" ");
+                InfraDataService.CreateViewIfNotExists(Constants.DbViews.StockSplitVta, @"WITH ""ENPICKLIST"" AS (SELECT
+                                                                                            R1.""ItemCode"",
+                                                                                            R1.""WhsCode"",
+                                                                                            SUM(P1.""RelQtty"") AS ""CantEnPicking""
+                                                                                        FROM PKL1 P1
+                                                                                        INNER JOIN RDR1 R1
+                                                                                            ON R1.""DocEntry"" = P1.""OrderEntry""
+                                                                                           AND R1.""LineNum""  = P1.""OrderLine""
+                                                                                        WHERE P1.""BaseObject"" = '17'         -- Orden de Venta; sumar más ramas con UNION ALL si hay otros BaseObject
+                                                                                          AND P1.""PickStatus"" <> 'C'       -- ⚠️ no confirmé los valores reales de PickStatus (¿'C'=cerrado? ¿'Y'/'N'?) — revisar
+                                                                                        GROUP BY R1.""ItemCode"", R1.""WhsCode"") SELECT
+                                                                                        CASE
+                                                                                            WHEN T1.""UgpEntry"" = -1
+                                                                                                OR T2.""AltQty"" IS NULL
+                                                                                                OR T2.""AltQty"" = 0
+                                                                                                THEN T0.""OnHand"" - IFNULL(E.""CantEnPicking"", 0) -- + T0.""IsCommited"" - T0.""OnOrder"" - 
+                                                                                            ELSE (T0.""OnHand""  - IFNULL(E.""CantEnPicking"", 0)) * (T2.""BaseQty"" / T2.""AltQty"")
+                                                                                        END                                             AS ""AvailableStock_Unidades_Base"",
+                                                                                        T0.""ItemCode"",
+                                                                                        T0.""WhsCode"",
+                                                                                        IFNULL(E.""CantEnPicking"", 0)                    AS ""YaEnListaPicking"",
+                                                                                        T0.""ItemCode"" AS ""kEY_ItemCode"",
+                                                                                        T0.""WhsCode""  AS ""kEY_WhsCode""
+                                                                                    FROM
+                                                                                        OITW T0
+                                                                                    INNER JOIN OITM T1 ON T1.""ItemCode"" = T0.""ItemCode""
+                                                                                    LEFT  JOIN UGP1 T2 ON T2.""UgpEntry"" = T1.""UgpEntry"" AND T2.""UomEntry"" = T1.""IUoMEntry""
+                                                                                    LEFT  JOIN OUOM T3 ON T3.""UomEntry"" = T1.""IUoMEntry""
+                                                                                    LEFT  JOIN EnPickList E ON E.""ItemCode"" = T0.""ItemCode"" AND E.""WhsCode"" = T0.""WhsCode""");
             }
             catch (Exception ex)
             {
