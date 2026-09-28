@@ -3,6 +3,7 @@ using Addon_AutoDivSalesOrd.Services;
 using SAPbobsCOM;
 using SAPbouiCOM;
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -112,6 +113,13 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         {
             BubbleEvent = true;
 
+            if ((boi.EventType == BoEventTypes.et_FORM_DATA_LOAD || boi.EventType == BoEventTypes.et_FORM_DATA_UPDATE)
+                     && boi.ActionSuccess)
+            {
+                UpdateBtnRetryJournalState(boi.FormUID);
+                return;
+            }
+
             if (boi.EventType == BoEventTypes.et_FORM_DATA_ADD && boi.ActionSuccess)
             {
                 SAPbouiCOM.Form oForm = null;
@@ -189,8 +197,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
             {
                 oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
 
-                for (int i = 0; i < oForm.Items.Count; i++)
-                    if (oForm.Items.Item(i).UniqueID == BtnRetryJournalUID) return;
+                if (HasItem(oForm, BtnRetryJournalUID)) return;
 
                 SAPbouiCOM.Item oItemBtnCancel = oForm.Items.Item("2");
                 SAPbouiCOM.Item oItemBtn = oForm.Items.Add(BtnRetryJournalUID, BoFormItemTypes.it_BUTTON);
@@ -216,6 +223,49 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
             {
                 if (oForm != null) Marshal.ReleaseComObject(oForm);
             }
+        }
+
+        /// <summary>
+        /// Habilita el botón "Generar Asiento Imp." solo si la factura cargada es de importados:
+        /// U_Importado = 'Y' y U_ITPS_ImportedPercentage = 50, y no está cancelada.
+        /// </summary>
+        private void UpdateBtnRetryJournalState(string FormUID)
+        {
+            SAPbouiCOM.Form oForm = null;
+            SAPbouiCOM.DBDataSource oDS = null;
+            try
+            {
+                oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
+                if (!HasItem(oForm, BtnRetryJournalUID)) return;
+
+                oDS = oForm.DataSources.DBDataSources.Item("OINV");
+
+                string importado = oDS.GetValue("U_Importado", 0).Trim();
+                string rawPerc = oDS.GetValue("U_ITPS_ImportedPercentage", 0).Trim();
+                string CANCELED = oDS.GetValue("CANCELED", 0).Trim();
+
+                decimal.TryParse(rawPerc, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal importedPerc);
+
+                bool isImported = importado == "Y" && importedPerc == RetryJournalImportedPerc && CANCELED == "N";
+
+                oForm.Items.Item(BtnRetryJournalUID).Enabled = isImported;
+            }
+            catch (Exception ex)
+            {
+                NotificationService.Error($"Error al actualizar el estado del botón de asiento de importados. {ex.Message}");
+            }
+            finally
+            {
+                if (oDS != null) Marshal.ReleaseComObject(oDS);
+                if (oForm != null) Marshal.ReleaseComObject(oForm);
+            }
+        }
+
+        private static bool HasItem(SAPbouiCOM.Form oForm, string itemUID)
+        {
+            for (int i = 0; i < oForm.Items.Count; i++)
+                if (oForm.Items.Item(i).UniqueID == itemUID) return true;
+            return false;
         }
 
         /// <summary>
