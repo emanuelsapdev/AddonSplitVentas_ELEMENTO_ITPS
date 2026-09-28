@@ -30,7 +30,10 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         }
 
         /// <summary>
-        /// Habilita el botón "Generar Asiento Imp." solo si la factura cargada es de importados.
+        /// Habilita el botón "Generar Asiento Imp." solo si la factura cargada es de importados
+        /// (U_Importado = 'Y', U_ITPS_ImportedPercentage = 50, no cancelada) y todavía no tiene
+        /// un asiento asociado por OJDT."U_ITPS_RelatedInvoice". Se evalúa en cada carga de
+        /// la factura (apertura, navegación, refresco) y luego de actualizarla.
         /// </summary>
         private void UpdateBtnRetryJournalState(string FormUID)
         {
@@ -40,7 +43,12 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
                 oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
 
                 var data = GetDataFromFormInvoice(oForm);
-                ToggleEnableBtnRetryJournal(oForm, IsImportedInvoiceForJournal(data));
+
+                bool enabled = data.DocEntry > 0
+                    && IsImportedInvoiceForJournal(data)
+                    && GetJournalEntryForInvoice(data.DocEntry) == -1;
+
+                ToggleEnableBtnRetryJournal(oForm, enabled);
             }
             finally
             {
