@@ -271,6 +271,12 @@
     <Compile Include="Common\IFormEventHandler.cs" />
     <Compile Include="Configuration\AppConfig.cs" />
     <Compile Include="Configuration\InfraConfig.cs" />
+    <Compile Include="Forms\CreditNote\CreditNoteFrm.cs" />
+    <Compile Include="Forms\CreditNote\CreditNoteFrm.FormReader.cs" />
+    <Compile Include="Forms\CreditNote\CreditNoteFrm.Functionality.cs" />
+    <Compile Include="Forms\CreditNote\CreditNoteFrm.Repository.cs" />
+    <Compile Include="Forms\CreditNote\CreditNoteFrm.Service.cs" />
+    <Compile Include="Forms\CreditNote\CreditNoteFrm.UIBuilder.cs" />
     <Compile Include="Forms\GerentePicking\GerentePickingFrm.FormReader.cs" />
     <Compile Include="Forms\GerentePicking\GerentePickingFrm.Functionality.cs" />
     <Compile Include="Forms\GerentePicking\GerentePickingFrm.Repository.cs" />
@@ -291,6 +297,7 @@
     <Compile Include="Forms\SalesOrder\SalesOrderFrm.UIBuilder.cs" />
     <Compile Include="Forms\SalesQuote\SalesQuoteFrm.Constants.cs" />
     <Compile Include="Forms\SalesQuote\SalesQuoteFrm.cs" />
+    <Compile Include="Models\CreditNoteForm.cs" />
     <Compile Include="Models\GerentePickingForm.cs" />
     <Compile Include="Models\SalesInvoiceForm.cs" />
     <Compile Include="Models\SalesOrderForm.cs" />

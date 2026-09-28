@@ -13,6 +13,7 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string SalesOrder = "139";
             public const string SalesQuote = "149";
             public const string SalesInvoice = "133";
+            public const string CreditNote = "179";
             public const string GerentePicking = "81";
         }
 
@@ -117,6 +118,17 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_BtnCancel = "2";
             public const string Head_BtnRetryJournal = "btnRetryJE";
 
+
+            public const string Det_ItemCode = "1";
+            public const string Det_Discount = "15";
+        }
+
+        public static class CreditNote_FieldsUIDs
+        {
+            public const string Head_Matrix = "38";
+            public const string Head_ImportedPercentage = "U_ITPS_ImportedPercentage";
+            public const string Head_BtnCancel = "2";
+            public const string Head_BtnRetryJournal = "btnRetryJE";
 
             public const string Det_ItemCode = "1";
             public const string Det_Discount = "15";

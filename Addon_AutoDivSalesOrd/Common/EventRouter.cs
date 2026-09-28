@@ -1,3 +1,4 @@
+using Addon_AutoDivSalesOrd.Forms.CreditNote;
 using Addon_AutoDivSalesOrd.Forms.GerentePicking;
 using Addon_AutoDivSalesOrd.Forms.SalesInvoice;
 using Addon_AutoDivSalesOrd.Forms.SalesOrder;
@@ -28,7 +29,8 @@ namespace Addon_AutoDivSalesOrd.Common
                 { SalesQuoteFrm.FormType, new SalesQuoteFrm() },
                 { SalesOrderFrm.FormType, new SalesOrderFrm() },
                 { GerentePickingFrm.FormType, new GerentePickingFrm() },
-                { SalesInvoiceFrm.FormType, new SalesInvoiceFrm() }
+                { SalesInvoiceFrm.FormType, new SalesInvoiceFrm() },
+                { CreditNoteFrm.FormType, new CreditNoteFrm() }
             };
 
             try

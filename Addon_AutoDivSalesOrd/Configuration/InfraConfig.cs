@@ -281,6 +281,13 @@ namespace Addon_AutoDivSalesOrd.Configuration
                     type: BoFieldTypes.db_Numeric,
                     linkedSystemObject: UDFLinkedSystemObjectTypesEnum.ulInvoices);
 
+                InfraDataService.CreateUserField(
+                    tableName: "OJDT",
+                    fieldName: "ITPS_RelatedCreditNote",
+                    desc: "Nota Crédito Importados",
+                    type: BoFieldTypes.db_Numeric,
+                    linkedSystemObject: UDFLinkedSystemObjectTypesEnum.ulCreditNotes);
+
                 InfraDataService.CreateViewIfNotExists(Constants.DbViews.StockSplitVta, @"WITH ""ENPICKLIST"" AS (SELECT
                                                                                             R1.""ItemCode"",
                                                                                             R1.""WhsCode"",
