@@ -43,11 +43,9 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         }
 
         /// <summary>
-        /// Busca un asiento vigente asociado a la factura por medio de OJDT."U_ITPS_RelatedInvoice".
-        /// No considera asientos revertidos (los que tienen un asiento de reversión apuntándoles)
-        /// ni los propios asientos de reversión.
+        /// Busca un asiento asociado a la factura por medio de OJDT."U_ITPS_RelatedInvoice".
         /// </summary>
-        /// <returns>TransId del asiento vigente, o -1 si no existe.</returns>
+        /// <returns>TransId del asiento, o -1 si no existe.</returns>
         private int GetActiveJournalEntryForInvoice(int invoiceDocEntry)
         {
             Recordset rs = null;
@@ -59,10 +57,6 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
                     SELECT TOP 1 T0.""TransId""
                     FROM OJDT T0
                     WHERE T0.""U_ITPS_RelatedInvoice"" = {invoiceDocEntry}
-                      AND IFNULL(T0.""StornoToTr"", 0) = 0
-                      AND NOT EXISTS (
-                            SELECT 1 FROM OJDT R
-                            WHERE R.""StornoToTr"" = T0.""TransId"")
                     ORDER BY T0.""TransId"" DESC";
 
                 rs.DoQuery(q);

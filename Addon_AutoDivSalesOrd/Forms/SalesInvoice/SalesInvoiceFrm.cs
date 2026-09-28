@@ -270,7 +270,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
 
         /// <summary>
         /// Reintenta generar el asiento de importados de la factura abierta,
-        /// solo si no existe ya un asiento vigente asociado por OJDT."U_ITPS_RelatedInvoice".
+        /// solo si no existe ya un asiento asociado por OJDT."U_ITPS_RelatedInvoice".
         /// </summary>
         private void RetryImportJournalEntry(string FormUID)
         {
