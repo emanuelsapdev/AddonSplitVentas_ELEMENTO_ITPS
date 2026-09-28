@@ -3,7 +3,6 @@ using Addon_AutoDivSalesOrd.Services;
 using SAPbobsCOM;
 using SAPbouiCOM;
 using System;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -18,7 +17,6 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
     {
         public const string FormType = Constants.FormTypes.SalesInvoice;
 
-        private const string BtnRetryJournalUID = "btnRetryJE";
         private const decimal RetryJournalImportedPerc = 50m;
 
         #region Implementación de IFormEventHandler
@@ -29,14 +27,28 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
 
             if (pVal.EventType == BoEventTypes.et_FORM_LOAD && !pVal.BeforeAction)
             {
-                AddBtnRetryJournal(FormUID);
+                try
+                {
+                    AddBtnRetryJournal(FormUID);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error($"Error al agregar el botón de reintento de asiento. {ex.Message}");
+                }
                 return;
             }
 
             if (pVal.EventType == BoEventTypes.et_ITEM_PRESSED && pVal.ActionSuccess
-                     && pVal.ItemUID == BtnRetryJournalUID)
+                     && pVal.ItemUID == Constants.Invoice_FieldsUIDs.Head_BtnRetryJournal)
             {
-                RetryImportJournalEntry(FormUID);
+                try
+                {
+                    RetryImportJournalEntry(FormUID);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error(ex.Message);
+                }
                 return;
             }
 
@@ -116,7 +128,14 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
             if ((boi.EventType == BoEventTypes.et_FORM_DATA_LOAD || boi.EventType == BoEventTypes.et_FORM_DATA_UPDATE)
                      && boi.ActionSuccess)
             {
-                UpdateBtnRetryJournalState(boi.FormUID);
+                try
+                {
+                    UpdateBtnRetryJournalState(boi.FormUID);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error($"Error al actualizar el estado del botón de asiento de importados. {ex.Message}");
+                }
                 return;
             }
 
@@ -180,192 +199,6 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         public void OnMenuEvent(ref MenuEvent pVal, out bool BubbleEvent)
         {
             BubbleEvent = true;
-        }
-
-        #endregion
-
-        #region Reintento de asiento de importados
-
-        /// <summary>
-        /// Agrega el botón "Generar Asiento Imp." junto al botón Cancelar.
-        /// Solo queda habilitado en modo OK (factura existente).
-        /// </summary>
-        private void AddBtnRetryJournal(string FormUID)
-        {
-            SAPbouiCOM.Form oForm = null;
-            try
-            {
-                oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
-
-                if (HasItem(oForm, BtnRetryJournalUID)) return;
-
-                SAPbouiCOM.Item oItemBtnCancel = oForm.Items.Item("2");
-                SAPbouiCOM.Item oItemBtn = oForm.Items.Add(BtnRetryJournalUID, BoFormItemTypes.it_BUTTON);
-
-                oItemBtn.Top = oItemBtnCancel.Top;
-                oItemBtn.Left = oItemBtnCancel.Left + oItemBtnCancel.Width + 5;
-                oItemBtn.Width = oItemBtnCancel.Width * 2;
-                oItemBtn.Height = oItemBtnCancel.Height;
-                oItemBtn.AffectsFormMode = false;
-                oItemBtn.LinkTo = "2";
-
-                oItemBtn.SetAutoManagedAttribute(BoAutoManagedAttr.ama_Editable, (int)BoAutoFormMode.afm_Add, BoModeVisualBehavior.mvb_False);
-                oItemBtn.SetAutoManagedAttribute(BoAutoManagedAttr.ama_Editable, (int)BoAutoFormMode.afm_Find, BoModeVisualBehavior.mvb_False);
-                oItemBtn.SetAutoManagedAttribute(BoAutoManagedAttr.ama_Editable, (int)BoAutoFormMode.afm_Ok, BoModeVisualBehavior.mvb_True);
-
-                ((SAPbouiCOM.Button)oItemBtn.Specific).Caption = "Generar Asiento Imp.";
-            }
-            catch (Exception ex)
-            {
-                NotificationService.Error($"Error al agregar el botón de reintento de asiento. {ex.Message}");
-            }
-            finally
-            {
-                if (oForm != null) Marshal.ReleaseComObject(oForm);
-            }
-        }
-
-        /// <summary>
-        /// Habilita el botón "Generar Asiento Imp." solo si la factura cargada es de importados:
-        /// U_Importado = 'Y' y U_ITPS_ImportedPercentage = 50, y no está cancelada.
-        /// </summary>
-        private void UpdateBtnRetryJournalState(string FormUID)
-        {
-            SAPbouiCOM.Form oForm = null;
-            SAPbouiCOM.DBDataSource oDS = null;
-            try
-            {
-                oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
-                if (!HasItem(oForm, BtnRetryJournalUID)) return;
-
-                oDS = oForm.DataSources.DBDataSources.Item("OINV");
-
-                string importado = oDS.GetValue("U_Importado", 0).Trim();
-                string rawPerc = oDS.GetValue("U_ITPS_ImportedPercentage", 0).Trim();
-                string CANCELED = oDS.GetValue("CANCELED", 0).Trim();
-
-                decimal.TryParse(rawPerc, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal importedPerc);
-
-                bool isImported = importado == "Y" && importedPerc == RetryJournalImportedPerc && CANCELED == "N";
-
-                oForm.Items.Item(BtnRetryJournalUID).Enabled = isImported;
-            }
-            catch (Exception ex)
-            {
-                NotificationService.Error($"Error al actualizar el estado del botón de asiento de importados. {ex.Message}");
-            }
-            finally
-            {
-                if (oDS != null) Marshal.ReleaseComObject(oDS);
-                if (oForm != null) Marshal.ReleaseComObject(oForm);
-            }
-        }
-
-        private static bool HasItem(SAPbouiCOM.Form oForm, string itemUID)
-        {
-            for (int i = 0; i < oForm.Items.Count; i++)
-                if (oForm.Items.Item(i).UniqueID == itemUID) return true;
-            return false;
-        }
-
-        /// <summary>
-        /// Reintenta generar el asiento de importados de la factura abierta,
-        /// solo si no existe ya un asiento asociado por OJDT."U_ITPS_RelatedInvoice".
-        /// </summary>
-        private void RetryImportJournalEntry(string FormUID)
-        {
-            SAPbouiCOM.Form oForm = null;
-            SAPbouiCOM.DBDataSource oDS = null;
-            SAPbobsCOM.Documents oInvoice = null;
-            try
-            {
-                oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
-
-                if (oForm.Mode != BoFormMode.fm_OK_MODE)
-                {
-                    NotificationService.Warn("Guarde o descarte los cambios de la factura antes de generar el asiento.");
-                    return;
-                }
-
-                oDS = oForm.DataSources.DBDataSources.Item("OINV");
-
-                string rawDocEntry = oDS.GetValue("DocEntry", 0).Trim();
-                string CANCELED = oDS.GetValue("CANCELED", 0).Trim();
-
-                if (!int.TryParse(rawDocEntry, out int docEntry) || docEntry <= 0)
-                {
-                    NotificationService.Warn("No se pudo determinar la factura abierta.");
-                    return;
-                }
-
-                if (CANCELED != "N")
-                {
-                    NotificationService.Warn("La factura está cancelada, no se genera el asiento.");
-                    return;
-                }
-
-                (int importDocEntry, decimal importedPerc) = GetImportOrderDocEntryAndImportedPercFromInvoice(docEntry);
-                if (importDocEntry == -1)
-                {
-                    NotificationService.Warn("La factura no es de importados (U_Importado distinto de 'Y').");
-                    return;
-                }
-
-                if (importedPerc != RetryJournalImportedPerc)
-                {
-                    NotificationService.Warn($"El porcentaje de importados de la factura es {importedPerc:0.##}%. Solo se genera asiento para {RetryJournalImportedPerc:0.##}%.");
-                    return;
-                }
-
-                int existingTransId = GetJournalEntryForInvoice(docEntry);
-                if (existingTransId != -1)
-                {
-                    NotificationService.Warn($"La factura ya tiene el asiento N° {existingTransId} asociado. No se genera uno nuevo.");
-                    ConnectionSDK.UIAPI.OpenForm(BoFormObjectEnum.fo_JournalPosting, null, existingTransId.ToString());
-                    return;
-                }
-
-                string msg = "La factura no tiene asiento de importados asociado. ¿Desea generarlo?";
-                if (ConnectionSDK.UIAPI.MessageBox(msg, 2, "Confirmar", "Cancelar") != 1) return;
-
-                int transId = ProcessImportJournalEntry(docEntry);
-                if (transId == -1)
-                {
-                    NotificationService.Error("No se generó el asiento: no se encontró el cliente o el importe de descuento de importados es cero.");
-                    return;
-                }
-
-                oInvoice = ConnectionSDK.DIAPI.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oInvoices);
-                if (!oInvoice.GetByKey(docEntry))
-                    throw new Exception($"Se creó el asiento N° {transId}, pero no se pudo leer la factura {docEntry} para referenciarlo.");
-
-                oInvoice.DocumentReferences.ReferencedObjectType = SAPbobsCOM.ReferencedObjectTypeEnum.rot_JournalEntry;
-                oInvoice.DocumentReferences.ReferencedDocEntry = transId;
-                oInvoice.DocumentReferences.Add();
-
-                var ret = oInvoice.Update();
-                if (ret != 0)
-                {
-                    ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
-                    throw new Exception($"Se creó el asiento N° {transId}, pero hubo un error al referenciarlo en la factura. {errCode} - {errMsg}");
-                }
-
-                // Refresca la factura en pantalla para que no quede desactualizada respecto de la DI API.
-                try { ConnectionSDK.UIAPI.ActivateMenuItem(Constants.MenusUID.RowsRefresh); } catch { }
-
-                NotificationService.Success($"Asiento N° {transId} generado correctamente.");
-                ConnectionSDK.UIAPI.OpenForm(BoFormObjectEnum.fo_JournalPosting, null, transId.ToString());
-            }
-            catch (Exception ex)
-            {
-                NotificationService.Error(ex.Message);
-            }
-            finally
-            {
-                if (oInvoice != null) Marshal.ReleaseComObject(oInvoice);
-                if (oDS != null) Marshal.ReleaseComObject(oDS);
-                if (oForm != null) Marshal.ReleaseComObject(oForm);
-            }
         }
 
         #endregion

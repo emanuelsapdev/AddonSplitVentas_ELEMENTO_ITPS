@@ -48,6 +48,8 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_CardCode = "CardCode";
             public const string Head_SplitPercentage = "U_ITPS_SplitPercentage";
             public const string Head_ImportedPercentage = "U_ITPS_ImportedPercentage";
+            public const string Head_BtnCancel = "2";
+            public const string Head_BtnRetryJournal = "btnRetryJE";
             public const string Head_CategoryClient = "U_CATEGORIA_CLIENTE";
             public const string Head_AssignedEntity = "U_Tipo";
             public const string Head_GlobalAgree = "U_ITPS_NRO_AC";

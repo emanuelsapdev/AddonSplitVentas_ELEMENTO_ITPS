@@ -1,5 +1,6 @@
 using Addon_AutoDivSalesOrd.Common;
 using Addon_AutoDivSalesOrd.Configuration;
+using Addon_AutoDivSalesOrd.Services;
 using SAPbobsCOM;
 using System;
 using System.Runtime.InteropServices;
@@ -79,6 +80,110 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
             {
 
                 if (je != null) Marshal.ReleaseComObject(je);
+            }
+        }
+
+        /// <summary>
+        /// Reintenta generar el asiento de importados de la factura abierta,
+        /// solo si no existe ya un asiento asociado por OJDT."U_ITPS_RelatedInvoice".
+        /// </summary>
+        private void RetryImportJournalEntry(string FormUID)
+        {
+            SAPbouiCOM.Form oForm = null;
+            try
+            {
+                oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
+
+                if (oForm.Mode != SAPbouiCOM.BoFormMode.fm_OK_MODE)
+                {
+                    NotificationService.Warn("Guarde o descarte los cambios de la factura antes de generar el asiento.");
+                    return;
+                }
+
+                var data = GetDataFromFormInvoice(oForm);
+
+                if (data.DocEntry <= 0)
+                {
+                    NotificationService.Warn("No se pudo determinar la factura abierta.");
+                    return;
+                }
+
+                if (data.Canceled != "N")
+                {
+                    NotificationService.Warn("La factura está cancelada, no se genera el asiento.");
+                    return;
+                }
+
+                (int importDocEntry, decimal importedPerc) = GetImportOrderDocEntryAndImportedPercFromInvoice(data.DocEntry);
+                if (importDocEntry == -1)
+                {
+                    NotificationService.Warn("La factura no es de importados (U_Importado distinto de 'Y').");
+                    return;
+                }
+
+                if (importedPerc != RetryJournalImportedPerc)
+                {
+                    NotificationService.Warn($"El porcentaje de importados de la factura es {importedPerc:0.##}%. Solo se genera asiento para {RetryJournalImportedPerc:0.##}%.");
+                    return;
+                }
+
+                int existingTransId = GetJournalEntryForInvoice(data.DocEntry);
+                if (existingTransId != -1)
+                {
+                    NotificationService.Warn($"La factura ya tiene el asiento N° {existingTransId} asociado. No se genera uno nuevo.");
+                    ConnectionSDK.UIAPI.OpenForm(SAPbouiCOM.BoFormObjectEnum.fo_JournalPosting, null, existingTransId.ToString());
+                    return;
+                }
+
+                string msg = "La factura no tiene asiento de importados asociado. ¿Desea generarlo?";
+                if (ConnectionSDK.UIAPI.MessageBox(msg, 2, "Confirmar", "Cancelar") != 1) return;
+
+                int transId = ProcessImportJournalEntry(data.DocEntry);
+                if (transId == -1)
+                {
+                    NotificationService.Error("No se generó el asiento: no se encontró el cliente o el importe de descuento de importados es cero.");
+                    return;
+                }
+
+                LinkJournalEntryToInvoice(data.DocEntry, transId);
+
+                // Refresca la factura en pantalla para que no quede desactualizada respecto de la DI API.
+                try { ConnectionSDK.UIAPI.ActivateMenuItem(Constants.MenusUID.RowsRefresh); } catch { }
+
+                NotificationService.Success($"Asiento N° {transId} generado correctamente.");
+                ConnectionSDK.UIAPI.OpenForm(SAPbouiCOM.BoFormObjectEnum.fo_JournalPosting, null, transId.ToString());
+            }
+            finally
+            {
+                if (oForm != null) Marshal.ReleaseComObject(oForm);
+            }
+        }
+
+        /// <summary>
+        /// Agrega el asiento como documento referenciado en la factura.
+        /// </summary>
+        private void LinkJournalEntryToInvoice(int invoiceDocEntry, int transId)
+        {
+            Documents oInvoice = null;
+            try
+            {
+                oInvoice = (Documents)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.oInvoices);
+                if (!oInvoice.GetByKey(invoiceDocEntry))
+                    throw new Exception($"Se creó el asiento N° {transId}, pero no se pudo leer la factura {invoiceDocEntry} para referenciarlo.");
+
+                oInvoice.DocumentReferences.ReferencedObjectType = ReferencedObjectTypeEnum.rot_JournalEntry;
+                oInvoice.DocumentReferences.ReferencedDocEntry = transId;
+                oInvoice.DocumentReferences.Add();
+
+                if (oInvoice.Update() != 0)
+                {
+                    ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
+                    throw new Exception($"Se creó el asiento N° {transId}, pero hubo un error al referenciarlo en la factura. {errCode} - {errMsg}");
+                }
+            }
+            finally
+            {
+                if (oInvoice != null) Marshal.ReleaseComObject(oInvoice);
             }
         }
     }

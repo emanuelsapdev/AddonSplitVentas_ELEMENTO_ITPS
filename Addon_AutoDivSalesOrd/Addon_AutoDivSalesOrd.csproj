@@ -278,8 +278,11 @@
     <Compile Include="Forms\GerentePicking\GerentePickingFrm.Service.cs" />
     <Compile Include="Forms\GerentePicking\GerentePickingFrm.UIBuilder.cs" />
     <Compile Include="Forms\SalesInvoice\SalesInvoiceFrm.cs" />
+    <Compile Include="Forms\SalesInvoice\SalesInvoiceFrm.FormReader.cs" />
+    <Compile Include="Forms\SalesInvoice\SalesInvoiceFrm.Functionality.cs" />
     <Compile Include="Forms\SalesInvoice\SalesInvoiceFrm.Repository.cs" />
     <Compile Include="Forms\SalesInvoice\SalesInvoiceFrm.Service.cs" />
+    <Compile Include="Forms\SalesInvoice\SalesInvoiceFrm.UIBuilder.cs" />
     <Compile Include="Forms\SalesOrder\SalesOrderFrm.cs" />
     <Compile Include="Forms\SalesOrder\SalesOrderFrm.FormReader.cs" />
     <Compile Include="Forms\SalesOrder\SalesOrderFrm.Functionality.cs" />
@@ -289,6 +292,7 @@
     <Compile Include="Forms\SalesQuote\SalesQuoteFrm.Constants.cs" />
     <Compile Include="Forms\SalesQuote\SalesQuoteFrm.cs" />
     <Compile Include="Models\GerentePickingForm.cs" />
+    <Compile Include="Models\SalesInvoiceForm.cs" />
     <Compile Include="Models\SalesOrderForm.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
