@@ -317,7 +317,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
                     return;
                 }
 
-                int existingTransId = GetActiveJournalEntryForInvoice(docEntry);
+                int existingTransId = GetJournalEntryForInvoice(docEntry);
                 if (existingTransId != -1)
                 {
                     NotificationService.Warn($"La factura ya tiene el asiento N° {existingTransId} asociado. No se genera uno nuevo.");

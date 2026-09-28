@@ -46,7 +46,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         /// Busca un asiento asociado a la factura por medio de OJDT."U_ITPS_RelatedInvoice".
         /// </summary>
         /// <returns>TransId del asiento, o -1 si no existe.</returns>
-        private int GetActiveJournalEntryForInvoice(int invoiceDocEntry)
+        private int GetJournalEntryForInvoice(int invoiceDocEntry)
         {
             Recordset rs = null;
             try
