@@ -289,15 +289,9 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
                 if (!oInvoice.GetByKey(docEntry))
                     throw new Exception($"Se creó el asiento N° {transId}, pero no se pudo leer la factura {docEntry} para referenciarlo.");
 
-                SAPbobsCOM.Document_References oRefs = oInvoice.DocumentReferences;
-                if (oRefs.Count > 0)
-                {
-                    oRefs.SetCurrentLine(oRefs.Count - 1);
-                    if (oRefs.ReferencedDocEntry != 0) oRefs.Add();
-                }
-
-                oRefs.ReferencedObjectType = SAPbobsCOM.ReferencedObjectTypeEnum.rot_JournalEntry;
-                oRefs.ReferencedDocEntry = transId;
+                oInvoice.DocumentReferences.ReferencedObjectType = SAPbobsCOM.ReferencedObjectTypeEnum.rot_JournalEntry;
+                oInvoice.DocumentReferences.ReferencedDocEntry = transId;
+                oInvoice.DocumentReferences.Add();
 
                 var ret = oInvoice.Update();
                 if (ret != 0)
