@@ -84,6 +84,42 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         }
 
         /// <summary>
+        /// Al crear la factura, genera el asiento de importados y lo referencia en la factura.
+        /// </summary>
+        private void GenerateImportJournalEntryOnInvoiceAdd(string FormUID)
+        {
+            SAPbouiCOM.Form oForm = null;
+            try
+            {
+                oForm = ConnectionSDK.UIAPI.Forms.Item(FormUID);
+
+                var data = GetDataFromFormInvoice(oForm);
+                if (data.Canceled != "N" || data.DocEntry <= 0) return;
+
+                int transId = CreateAndLinkImportJournalEntry(data.DocEntry);
+                if (transId != -1)
+                    ConnectionSDK.UIAPI.OpenForm(SAPbouiCOM.BoFormObjectEnum.fo_JournalPosting, null, transId.ToString());
+            }
+            finally
+            {
+                if (oForm != null) Marshal.ReleaseComObject(oForm);
+            }
+        }
+
+        /// <summary>
+        /// Genera el asiento de importados de la factura y, si se creó, lo referencia en ella.
+        /// </summary>
+        /// <returns>TransId del asiento creado, o -1 si la factura no corresponde.</returns>
+        private int CreateAndLinkImportJournalEntry(int invoiceDocEntry)
+        {
+            int transId = ProcessImportJournalEntry(invoiceDocEntry);
+            if (transId == -1) return -1;
+
+            LinkJournalEntryToInvoice(invoiceDocEntry, transId);
+            return transId;
+        }
+
+        /// <summary>
         /// Reintenta generar el asiento de importados de la factura abierta,
         /// solo si no existe ya un asiento asociado por OJDT."U_ITPS_RelatedInvoice".
         /// </summary>
@@ -138,14 +174,12 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
                 string msg = "La factura no tiene asiento de importados asociado. ¿Desea generarlo?";
                 if (ConnectionSDK.UIAPI.MessageBox(msg, 2, "Confirmar", "Cancelar") != 1) return;
 
-                int transId = ProcessImportJournalEntry(data.DocEntry);
+                int transId = CreateAndLinkImportJournalEntry(data.DocEntry);
                 if (transId == -1)
                 {
                     NotificationService.Error("No se generó el asiento: no se encontró el cliente o el importe de descuento de importados es cero.");
                     return;
                 }
-
-                LinkJournalEntryToInvoice(data.DocEntry, transId);
 
                 // Refresca la factura en pantalla para que no quede desactualizada respecto de la DI API.
                 try { ConnectionSDK.UIAPI.ActivateMenuItem(Constants.MenusUID.RowsRefresh); } catch { }
