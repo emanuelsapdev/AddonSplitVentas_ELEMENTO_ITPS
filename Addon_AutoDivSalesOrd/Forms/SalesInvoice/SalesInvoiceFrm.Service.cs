@@ -73,7 +73,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
             catch
             {
                 if (ConnectionSDK.DIAPI.InTransaction) ConnectionSDK.DIAPI.EndTransaction(BoWfTransOpt.wf_RollBack);
-                return -1;
+                throw;
             }
             finally
             {
