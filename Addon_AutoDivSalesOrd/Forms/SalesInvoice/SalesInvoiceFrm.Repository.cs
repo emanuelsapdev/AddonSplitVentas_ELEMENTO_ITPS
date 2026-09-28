@@ -43,6 +43,35 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         }
 
         /// <summary>
+        /// Busca un asiento asociado a la factura por medio de OJDT."U_ITPS_RelatedInvoice".
+        /// </summary>
+        /// <returns>TransId del asiento, o -1 si no existe.</returns>
+        private int GetJournalEntryForInvoice(int invoiceDocEntry)
+        {
+            Recordset rs = null;
+            try
+            {
+                rs = (Recordset)ConnectionSDK.DIAPI.GetBusinessObject(BoObjectTypes.BoRecordset);
+
+                string q = $@"
+                    SELECT TOP 1 T0.""TransId""
+                    FROM OJDT T0
+                    WHERE T0.""U_ITPS_RelatedInvoice"" = {invoiceDocEntry}
+                    ORDER BY T0.""TransId"" DESC";
+
+                rs.DoQuery(q);
+
+                if (rs.EoF) return -1;
+
+                return Convert.ToInt32(rs.Fields.Item(0).Value);
+            }
+            finally
+            {
+                if (rs != null) Marshal.ReleaseComObject(rs);
+            }
+        }
+
+        /// <summary>
         /// Obtiene el importe total de descuento de importados de la Factura:
         /// sumatoria de (PriceAfterVAT × DiscountPercent / 100 × Quantity) por línea.
         /// También retorna el CardCode del cliente.

@@ -17,11 +17,40 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
     {
         public const string FormType = Constants.FormTypes.SalesInvoice;
 
+        private const decimal RetryJournalImportedPerc = 50m;
+
         #region Implementación de IFormEventHandler
 
         public void OnItemEvent(string FormUID, ref ItemEvent pVal, out bool BubbleEvent)
         {
             BubbleEvent = true;
+
+            if (pVal.EventType == BoEventTypes.et_FORM_LOAD && !pVal.BeforeAction)
+            {
+                try
+                {
+                    AddBtnRetryJournal(FormUID);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error($"Error al agregar el botón de reintento de asiento. {ex.Message}");
+                }
+                return;
+            }
+
+            if (pVal.EventType == BoEventTypes.et_ITEM_PRESSED && pVal.ActionSuccess
+                     && pVal.ItemUID == Constants.Invoice_FieldsUIDs.Head_BtnRetryJournal)
+            {
+                try
+                {
+                    RetryImportJournalEntry(FormUID);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error(ex.Message);
+                }
+                return;
+            }
 
             // 
             if (pVal.EventType == BoEventTypes.et_COMBO_SELECT && pVal.ActionSuccess
@@ -96,61 +125,31 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesInvoice
         {
             BubbleEvent = true;
 
-            if (boi.EventType == BoEventTypes.et_FORM_DATA_ADD && boi.ActionSuccess)
+            if ((boi.EventType == BoEventTypes.et_FORM_DATA_LOAD || boi.EventType == BoEventTypes.et_FORM_DATA_UPDATE)
+                     && boi.ActionSuccess)
             {
-                SAPbouiCOM.Form oForm = null;
-                SAPbouiCOM.DBDataSource oDS = null;
-                SAPbobsCOM.Documents oInvoice = null;
                 try
                 {
-                    oForm = ConnectionSDK.UIAPI.Forms.Item(boi.FormUID);
-                    oDS = oForm.DataSources.DBDataSources.Item("OINV");
-                    oInvoice = ConnectionSDK.DIAPI.GetBusinessObject(SAPbobsCOM.BoObjectTypes.oInvoices);
+                    UpdateBtnRetryJournalState(boi.FormUID);
+                }
+                catch (Exception ex)
+                {
+                    NotificationService.Error($"Error al actualizar el estado del botón de asiento de importados. {ex.Message}");
+                }
+                return;
+            }
 
-                    string rawDocEntry = oDS.GetValue("DocEntry", 0);
-                    string CANCELED = oDS.GetValue("CANCELED", 0);
-                    if (CANCELED != "N") return;
-                    
-                    if (!int.TryParse(rawDocEntry, out int docEntry) || docEntry <= 0) return;
-
-                    if (oInvoice.GetByKey(docEntry))
-                    {
-                        int transId = ProcessImportJournalEntry(docEntry);
-                        if(transId != -1)
-                        {
-                            oInvoice.DocumentReferences.ReferencedObjectType = SAPbobsCOM.ReferencedObjectTypeEnum.rot_JournalEntry;
-                            oInvoice.DocumentReferences.ReferencedDocEntry = transId;
-                            oInvoice.DocumentReferences.Add();
-
-                            var ret = oInvoice.Update();
-                            if (ret != 0)
-                            {
-                                ConnectionSDK.DIAPI.GetLastError(out int errCode, out string errMsg);
-                                throw new Exception($"Error al actualizar la factura de importados con el asiento referenciado. {errCode} - {errMsg}");
-                            }
-                            string transIdStr = transId.ToString();
-                            ConnectionSDK.UIAPI.OpenForm(BoFormObjectEnum.fo_JournalPosting, null, transIdStr);
-                        }
-
-                    }
-
-
+            if (boi.EventType == BoEventTypes.et_FORM_DATA_ADD && boi.ActionSuccess)
+            {
+                try
+                {
+                    GenerateImportJournalEntryOnInvoiceAdd(boi.FormUID);
                 }
                 catch (Exception ex)
                 {
                     NotificationService.Error(ex.Message);
                 }
-                finally
-                {
-                    if (oForm != null)
-                        Marshal.ReleaseComObject(oForm);
-
-                    if (oDS != null)
-                        Marshal.ReleaseComObject(oDS);
-                }
-
             }
-
         }
 
         public void OnMenuEvent(ref MenuEvent pVal, out bool BubbleEvent)

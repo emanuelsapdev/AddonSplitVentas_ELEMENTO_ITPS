@@ -114,6 +114,8 @@ namespace Addon_AutoDivSalesOrd.Common
         {
             public const string Head_Matrix = "38";
             public const string Head_ImportedPercentage = "U_ITPS_ImportedPercentage";
+            public const string Head_BtnCancel = "2";
+            public const string Head_BtnRetryJournal = "btnRetryJE";
 
 
             public const string Det_ItemCode = "1";
