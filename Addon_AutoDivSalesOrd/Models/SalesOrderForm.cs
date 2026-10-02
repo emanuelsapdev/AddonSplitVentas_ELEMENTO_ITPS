@@ -26,6 +26,7 @@ namespace Addon_AutoDivSalesOrd.Models
         public int PaymentGroupCode { get; set; }
         public int GlobalAgreement { get; set; }
         public string AgreementPriceList { get; set; } = string.Empty;
+        public string ExclUpdPrice { get; set; } = string.Empty;
         public string Address2 { get; set; }
         public string ShipToCode { get; set; }
         public string Address { get; set; }

@@ -55,6 +55,7 @@ namespace Addon_AutoDivSalesOrd.Common
             public const string Head_AgreementPriceList = "U_ITPS_AgreementPriceList";
             public const string Head_RelatedOrder = "U_ITPS_RelatedOrder";
             public const string Head_ItpsDiscount = "U_ITPS_DESCUENTO";
+            public const string Head_ExclUpdPrice = "U_ITPS_SO_ExclUpdPrice";
             public const string Head_DocDate = "DocDate";
             public const string Head_DocEntry = "DocEntry";
             public const string Head_DocDueDate = "DocDueDate";

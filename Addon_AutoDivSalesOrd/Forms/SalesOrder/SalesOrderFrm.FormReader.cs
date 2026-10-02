@@ -128,6 +128,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
             mdl.GlobalAgreement = int.TryParse(globalAgree, out int agreement) ? agreement : 0;
             
             mdl.AgreementPriceList = db.GetValue(Constants.SalesOrder_Fields.Head_AgreementPriceList, 0).Trim();
+            mdl.ExclUpdPrice = db.GetValue(Constants.SalesOrder_Fields.Head_ExclUpdPrice, 0).Trim();
 
             mdl.DocDate = oDocDate.Value;
             mdl.DocDueDate = oDocDueDate.Value;
