@@ -154,6 +154,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                     primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
 
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AgreementPriceList).Value = data.AgreementPriceList;
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ExclUpdPrice).Value = data.ExclUpdPrice;
 
                 var docDateText = data.DocDate;
                 var docDueDateText = data.DocDueDate;
@@ -302,6 +303,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AssignedEntity).Value = Constants.FixedValues.EntityB;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AgreementPriceList).Value = data.AgreementPriceList;
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ExclUpdPrice).Value = data.ExclUpdPrice;
 
                 var docDateText = data.DocDate;
                 var docDueDateText = data.DocDueDate;
@@ -447,6 +449,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
                 primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AgreementPriceList).Value = data.AgreementPriceList;
+                primaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ExclUpdPrice).Value = data.ExclUpdPrice;
 
                 if (!string.IsNullOrWhiteSpace(docDateText))
                     primaryOrder.DocDate = ConverterService.GetDateTimeFromStringSAP(docDateText);
@@ -664,6 +667,7 @@ namespace Addon_AutoDivSalesOrd.Forms.SalesOrder
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ItpsDiscount).Value = totalDiscPerc;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_GlobalAgree).Value = data.GlobalAgreement;
                 secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_AgreementPriceList).Value = data.AgreementPriceList;
+                secondaryOrder.UserFields.Fields.Item(Constants.SalesOrder_Fields.Head_ExclUpdPrice).Value = data.ExclUpdPrice;
 
                 var docDateText = data.DocDate;
                 var docDueDateText = data.DocDueDate;
